@@ -1,0 +1,29 @@
+{
+  "name": "@va-claw/cli",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "va-claw": "./dist/bin/va-claw.mjs"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "pnpm --filter @va-claw/memory build && pnpm --filter @va-claw/identity build && pnpm --filter @va-claw/skills build && pnpm --filter @va-claw/daemon build && pnpm --filter @va-claw/channels build && tsc -b",
+    "test": "pnpm run build && node --test dist/*.test.js"
+  },
+  "dependencies": {
+    "@va-claw/channels": "workspace:*",
+    "@va-claw/daemon": "workspace:*",
+    "@va-claw/identity": "workspace:*",
+    "@va-claw/memory": "workspace:*",
+    "@va-claw/skills": "workspace:*",
+    "commander": "file:../../vendor/commander"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  }
+}

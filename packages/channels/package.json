@@ -1,0 +1,23 @@
+{
+  "name": "@va-claw/channels",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "pnpm --filter @va-claw/channel-telegram build && pnpm --filter @va-claw/channel-slack build && pnpm --filter @va-claw/channel-discord build && pnpm --filter @va-claw/identity build && tsc -b"
+  },
+  "dependencies": {
+    "@va-claw/channel-discord": "workspace:*",
+    "@va-claw/channel-slack": "workspace:*",
+    "@va-claw/channel-telegram": "workspace:*",
+    "@va-claw/identity": "workspace:*"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "files": [],
+  "references": [
+    { "path": "./packages/memory" },
+    { "path": "./packages/identity" },
+    { "path": "./packages/skills" },
+    { "path": "./packages/daemon" },
+    { "path": "./packages/channels/discord" },
+    { "path": "./packages/channels/telegram" },
+    { "path": "./packages/channels/slack" },
+    { "path": "./packages/channels" },
+    { "path": "./packages/cli" }
+  ],
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "strict": true,
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "composite": true,
+    "incremental": true,
+    "verbatimModuleSyntax": true,
+    "skipLibCheck": true,
+    "isolatedModules": true,
+    "noEmitOnError": true
+  }
+}

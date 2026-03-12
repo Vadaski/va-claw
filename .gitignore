@@ -1,0 +1,16 @@
+node_modules/
+.npm-cache/
+.pnpm-store/
+dist/
+*.tsbuildinfo
+!vendor/croner/dist/
+!vendor/croner/dist/**
+
+.va-auto-pilot/
+.va-auto-pilot
+sprint-state.json
+run-journal.md
+human-board.md
+board/
+docs/todo/
+*.auto-pilot*

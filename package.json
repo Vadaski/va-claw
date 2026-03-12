@@ -1,0 +1,20 @@
+{
+  "name": "va-claw",
+  "version": "0.1.0",
+  "bin": {
+    "va-claw": "./packages/cli/dist/bin/va-claw.mjs"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "workspaces": [
+    "packages/*",
+    "packages/channels/*"
+  ],
+  "scripts": {
+    "build": "tsc -b"
+  },
+  "devDependencies": {
+    "typescript": "file:vendor/typescript"
+  }
+}

@@ -1,0 +1,128 @@
+lockfileVersion: '9.0'
+
+settings:
+  autoInstallPeers: true
+  excludeLinksFromLockfile: false
+
+importers:
+
+  .:
+    devDependencies:
+      typescript:
+        specifier: file:vendor/typescript
+        version: file:vendor/typescript
+
+  packages/channels:
+    dependencies:
+      '@va-claw/channel-discord':
+        specifier: workspace:*
+        version: link:discord
+      '@va-claw/channel-slack':
+        specifier: workspace:*
+        version: link:slack
+      '@va-claw/channel-telegram':
+        specifier: workspace:*
+        version: link:telegram
+      '@va-claw/identity':
+        specifier: workspace:*
+        version: link:../identity
+
+  packages/channels/discord:
+    dependencies:
+      discord.js:
+        specifier: file:../../../vendor/discord.js
+        version: file:vendor/discord.js
+
+  packages/channels/slack:
+    dependencies:
+      '@slack/bolt':
+        specifier: file:../../../vendor/slack-bolt
+        version: file:vendor/slack-bolt
+
+  packages/channels/telegram:
+    dependencies:
+      grammy:
+        specifier: file:../../../vendor/grammy
+        version: file:vendor/grammy
+
+  packages/cli:
+    dependencies:
+      '@va-claw/channels':
+        specifier: workspace:*
+        version: link:../channels
+      '@va-claw/daemon':
+        specifier: workspace:*
+        version: link:../daemon
+      '@va-claw/identity':
+        specifier: workspace:*
+        version: link:../identity
+      '@va-claw/memory':
+        specifier: workspace:*
+        version: link:../memory
+      '@va-claw/skills':
+        specifier: workspace:*
+        version: link:../skills
+      commander:
+        specifier: file:../../vendor/commander
+        version: file:vendor/commander
+
+  packages/daemon:
+    dependencies:
+      '@va-claw/skills':
+        specifier: workspace:*
+        version: link:../skills
+      croner:
+        specifier: file:../../vendor/croner
+        version: file:vendor/croner
+
+  packages/identity:
+    dependencies:
+      '@clack/prompts':
+        specifier: file:./vendor/clack-prompts
+        version: file:packages/identity/vendor/clack-prompts
+
+  packages/memory: {}
+
+  packages/skills: {}
+
+packages:
+
+  '@clack/prompts@file:packages/identity/vendor/clack-prompts':
+    resolution: {directory: packages/identity/vendor/clack-prompts, type: directory}
+
+  '@slack/bolt@file:vendor/slack-bolt':
+    resolution: {directory: vendor/slack-bolt, type: directory}
+
+  commander@file:vendor/commander:
+    resolution: {directory: vendor/commander, type: directory}
+
+  croner@file:vendor/croner:
+    resolution: {directory: vendor/croner, type: directory}
+    engines: {node: '>=18.0'}
+
+  discord.js@file:vendor/discord.js:
+    resolution: {directory: vendor/discord.js, type: directory}
+
+  grammy@file:vendor/grammy:
+    resolution: {directory: vendor/grammy, type: directory}
+
+  typescript@file:vendor/typescript:
+    resolution: {directory: vendor/typescript, type: directory}
+    engines: {node: '>=14.17'}
+    hasBin: true
+
+snapshots:
+
+  '@clack/prompts@file:packages/identity/vendor/clack-prompts': {}
+
+  '@slack/bolt@file:vendor/slack-bolt': {}
+
+  commander@file:vendor/commander: {}
+
+  croner@file:vendor/croner: {}
+
+  discord.js@file:vendor/discord.js: {}
+
+  grammy@file:vendor/grammy: {}
+
+  typescript@file:vendor/typescript: {}

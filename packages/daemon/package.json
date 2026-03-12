@@ -1,0 +1,22 @@
+{
+  "name": "@va-claw/daemon",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "pnpm --filter @va-claw/memory build && pnpm --filter @va-claw/identity build && pnpm --filter @va-claw/skills build && tsc -b",
+    "test": "pnpm run build && node --test dist/*.test.js"
+  },
+  "dependencies": {
+    "@va-claw/skills": "workspace:*",
+    "croner": "file:../../vendor/croner"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  }
+}

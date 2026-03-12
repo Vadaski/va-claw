@@ -1,0 +1,22 @@
+import { ok } from "node:assert/strict";
+import test from "node:test";
+
+import { createCliProgram } from "./program.js";
+import { createTestDeps } from "./test-helpers.js";
+
+test("registers top-level and memory commands", () => {
+  const program = createCliProgram(createTestDeps());
+  const help = program.helpInformation();
+
+  ok(/\binstall\b/.test(help));
+  ok(/\bstart\b/.test(help));
+  ok(/\bstatus\b/.test(help));
+  ok(/\bmemory search\b/.test(help));
+  ok(/\bmemory clear\b/.test(help));
+  ok(/\bskill list\b/.test(help));
+  ok(/\bskill add\b/.test(help));
+  ok(/\bchannel discord setup\b/.test(help));
+  ok(/\bchannel discord start\b/.test(help));
+  ok(/\bchannel telegram setup\b/.test(help));
+  ok(/\bchannel slack status\b/.test(help));
+});

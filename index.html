@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VA-CLAW // MEMORY. IDENTITY. LOOP.</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --void: #0a0a0f;
+            --green: #00ff41;
+            --violet: #a855f7;
+            --cyan: #00ffff;
+            --magenta: #ff00ff;
+            --yellow: #ffff00;
+            --amber: #ff6b35;
+            --grid-line: rgba(0, 255, 255, 0.05);
+            --scanline: rgba(18, 16, 16, 0.1);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            image-rendering: pixelated;
+        }
+
+        body {
+            background-color: var(--void);
+            color: var(--green);
+            font-family: 'Press Start 2P', cursive;
+            line-height: 1.6;
+            overflow-x: hidden;
+            font-size: 12px;
+        }
+
+        /* PIXEL GRID BACKGROUND */
+        body::before {
+            content: "";
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                linear-gradient(var(--grid-line) 1px, transparent 1px),
+                linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+            background-size: 40px 40px;
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        /* SCANLINES */
+        body::after {
+            content: "";
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(
+                rgba(18, 16, 16, 0) 50%, 
+                rgba(0, 0, 0, 0.25) 50%
+            ), linear-gradient(
+                90deg, 
+                rgba(255, 0, 0, 0.06), 
+                rgba(0, 255, 0, 0.02), 
+                rgba(0, 0, 255, 0.06)
+            );
+            background-size: 100% 3px, 3px 100%;
+            z-index: 9999;
+            pointer-events: none;
+            opacity: 0.15;
+        }
+
+        /* UTILS */
+        .neon-text {
+            text-shadow: 0 0 10px var(--green), 0 0 20px var(--green);
+        }
+        .neon-violet {
+            color: var(--violet);
+            text-shadow: 0 0 10px var(--violet), 0 0 20px var(--violet);
+        }
+        .neon-cyan {
+            color: var(--cyan);
+            text-shadow: 0 0 10px var(--cyan), 0 0 20px var(--cyan);
+        }
+        .neon-yellow {
+            color: var(--yellow);
+            text-shadow: 0 0 10px var(--yellow), 0 0 20px var(--yellow);
+        }
+        .neon-magenta {
+            color: var(--magenta);
+            text-shadow: 0 0 10px var(--magenta), 0 0 20px var(--magenta);
+        }
+
+        .pixel-border {
+            box-shadow: 
+                4px 0 0 var(--green), 
+                -4px 0 0 var(--green), 
+                0 4px 0 var(--green), 
+                0 -4px 0 var(--green);
+            margin: 4px;
+        }
+
+        .pixel-border-violet {
+            box-shadow: 
+                4px 0 0 var(--violet), 
+                -4px 0 0 var(--violet), 
+                0 4px 0 var(--violet), 
+                0 -4px 0 var(--violet);
+            margin: 4px;
+        }
+
+        .pixel-border-cyan {
+            box-shadow: 
+                4px 0 0 var(--cyan), 
+                -4px 0 0 var(--cyan), 
+                0 4px 0 var(--cyan), 
+                0 -4px 0 var(--cyan);
+            margin: 4px;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 16px 24px;
+            text-decoration: none;
+            cursor: pointer;
+            border: none;
+            background: var(--void);
+            color: var(--green);
+            transition: transform 0.1s steps(2);
+            font-family: 'Press Start 2P', cursive;
+        }
+
+        .btn:hover {
+            transform: translate(4px, 4px);
+            box-shadow: 
+                4px 0 0 var(--yellow), 
+                -4px 0 0 var(--yellow), 
+                0 4px 0 var(--yellow), 
+                0 -4px 0 var(--yellow);
+            color: var(--yellow);
+        }
+
+        .btn-yellow {
+            color: var(--yellow);
+            box-shadow: 
+                4px 0 0 var(--yellow), 
+                -4px 0 0 var(--yellow), 
+                0 4px 0 var(--yellow), 
+                0 -4px 0 var(--yellow);
+        }
+
+        /* LAYOUT */
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        section {
+            margin-bottom: 120px;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.3s steps(3), transform 0.3s steps(3);
+        }
+
+        section.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* HERO */
+        .hero {
+            text-align: center;
+            padding-top: 80px;
+        }
+
+        .ascii-logo {
+            display: inline-block;
+            white-space: pre;
+            font-family: monospace;
+            font-size: 10px;
+            line-height: 1.2;
+            margin-bottom: 40px;
+            color: var(--cyan);
+            text-shadow: 0 0 15px var(--cyan);
+        }
+
+        .tagline {
+            font-size: 18px;
+            margin-bottom: 10px;
+        }
+
+        .sub-tagline {
+            font-size: 12px;
+            color: var(--violet);
+            margin-bottom: 40px;
+        }
+
+        .big-sell {
+            background: var(--yellow);
+            color: var(--void);
+            padding: 10px;
+            display: inline-block;
+            margin-bottom: 40px;
+            animation: blink 1s steps(2) infinite;
+        }
+
+        @keyframes blink {
+            50% { opacity: 0; }
+        }
+
+        .terminal-box {
+            background: #000;
+            text-align: left;
+            padding: 20px;
+            max-width: 600px;
+            margin: 0 auto 40px;
+            font-family: monospace;
+            font-size: 14px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .terminal-content {
+            white-space: pre-wrap;
+            color: #fff;
+        }
+
+        .cursor {
+            display: inline-block;
+            width: 10px;
+            height: 18px;
+            background: var(--green);
+            vertical-align: middle;
+            animation: cursor-blink 0.8s steps(2) infinite;
+        }
+
+        @keyframes cursor-blink {
+            50% { opacity: 0; }
+        }
+
+        /* PITCH */
+        .pitch-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            text-align: center;
+        }
+
+        .pitch-col {
+            padding: 20px;
+        }
+
+        .pitch-title {
+            color: var(--magenta);
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+
+        /* CAPABILITIES */
+        .cap-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 40px;
+        }
+
+        .cap-card {
+            padding: 20px;
+            background: rgba(10, 10, 15, 0.8);
+            transition: transform 0.1s steps(2);
+        }
+
+        .cap-card:hover {
+            transform: translate(8px, 8px);
+            box-shadow: 
+                4px 0 0 var(--cyan), 
+                -4px 0 0 var(--cyan), 
+                0 4px 0 var(--cyan), 
+                0 -4px 0 var(--cyan);
+        }
+
+        .cap-icon {
+            font-size: 20px;
+            margin-bottom: 20px;
+            display: block;
+        }
+
+        .cap-name {
+            color: var(--cyan);
+            margin-bottom: 15px;
+            font-size: 14px;
+        }
+
+        .cap-desc {
+            font-size: 10px;
+            line-height: 1.8;
+            color: #ccc;
+        }
+
+        /* INSTALL */
+        .install-box {
+            text-align: center;
+        }
+
+        .box-frame {
+            display: inline-block;
+            padding: 40px;
+            background: var(--void);
+            color: var(--yellow);
+            border: 4px solid var(--yellow);
+            white-space: pre;
+            font-family: monospace;
+            font-size: 16px;
+            line-height: 1.4;
+        }
+
+        /* CLI REFERENCE */
+        .cli-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            background: rgba(0, 0, 0, 0.4);
+            padding: 30px;
+        }
+
+        .cli-col h3 {
+            color: var(--violet);
+            margin-bottom: 20px;
+            border-bottom: 2px solid var(--violet);
+            padding-bottom: 10px;
+        }
+
+        .cli-cmd {
+            margin-bottom: 15px;
+            font-family: monospace;
+            font-size: 12px;
+        }
+
+        .cmd-main { color: var(--cyan); }
+        .cmd-sub { color: var(--green); }
+        .cmd-comment { color: #666; font-style: italic; display: block; margin-bottom: 4px; }
+
+        /* CHANNELS */
+        .channels-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+        }
+
+        .channel-card {
+            padding: 20px;
+            text-align: center;
+        }
+
+        .discord { border: 4px solid #5865F2; color: #5865F2; }
+        .telegram { border: 4px solid #0088cc; color: #0088cc; }
+        .slack { border: 4px solid #4A154B; color: #4A154B; }
+
+        /* FOOTER */
+        footer {
+            text-align: center;
+            padding: 80px 20px;
+            border-top: 4px solid var(--grid-line);
+        }
+
+        .footer-links {
+            margin: 30px 0;
+        }
+
+        .footer-links a {
+            color: var(--green);
+            text-decoration: none;
+            margin: 0 15px;
+        }
+
+        .footer-links a:hover {
+            color: var(--yellow);
+        }
+
+        .quote {
+            color: var(--magenta);
+            font-size: 10px;
+            margin-top: 40px;
+        }
+
+        /* RESPONSIVE */
+        @media (max-width: 768px) {
+            .pitch-grid, .cap-grid, .cli-grid, .channels-grid {
+                grid-template-columns: 1fr;
+            }
+            .ascii-logo { font-size: 6px; }
+            .box-frame { font-size: 12px; padding: 20px; width: 100%; overflow-x: auto; }
+            .tagline { font-size: 14px; }
+        }
+
+        /* INFINITE GRID EFFECT */
+        .grid-container {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 40vh;
+            perspective: 500px;
+            z-index: -2;
+            overflow: hidden;
+            pointer-events: none;
+        }
+
+        .moving-grid {
+            position: absolute;
+            top: 0;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background-image: 
+                linear-gradient(var(--grid-line) 2px, transparent 2px),
+                linear-gradient(90deg, var(--grid-line) 2px, transparent 2px);
+            background-size: 50px 50px;
+            transform: rotateX(60deg) translateY(0);
+            animation: grid-move 5s linear infinite;
+        }
+
+        @keyframes grid-move {
+            0% { transform: rotateX(60deg) translateY(0); }
+            100% { transform: rotateX(60deg) translateY(50px); }
+        }
+
+        .dither-bg {
+            background-image: radial-gradient(var(--grid-line) 1px, transparent 1px);
+            background-size: 4px 4px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="grid-container">
+        <div class="moving-grid"></div>
+    </div>
+
+    <div class="container">
+        
+        <!-- HERO SECTION -->
+        <section class="hero visible">
+            <div class="ascii-logo">
+ __   _____    _____ _      _____ _    _
+\ \ / / _ \  / ____| |    / ____| |  | |
+ \ V / |_| || |    | |   | (___ | |  | |
+  > <|  __/ | |    | |    \___ \| |/\| |
+ / . \ | |  | |____| |____  __) |  /\  |
+/_/ \_\|_|   \_____|______|_____/\/  \/ 
+            </div>
+            
+            <h1 class="tagline neon-text">> YOUR AI CLI COMPANION</h1>
+            <p class="sub-tagline">MEMORY. IDENTITY. LOOP.</p>
+            
+            <div class="big-sell">
+                ★ WORKS WITH YOUR CLAUDE CODE & CODEX SUBSCRIPTION<br>
+                ZERO EXTRA COST. ZERO NEW ACCOUNTS.
+            </div>
+
+            <div class="terminal-box pixel-border">
+                <div class="terminal-content" id="demo-terminal"></div><span class="cursor"></span>
+            </div>
+
+            <div class="hero-btns">
+                <a href="https://github.com/Vadaski/va-claw" class="btn pixel-border btn-yellow">[ ★ STAR ON GITHUB ]</a>
+                <a href="#install" class="btn pixel-border">[ ↓ GET STARTED ]</a>
+            </div>
+        </section>
+
+        <!-- THE PITCH -->
+        <section class="pitch">
+            <div class="pitch-grid">
+                <div class="pitch-col">
+                    <h2 class="pitch-title">THE PROBLEM</h2>
+                    <p>EVERY SESSION<br>STARTS BLANK.</p>
+                    <p style="margin-top:20px; color:var(--amber)">YOUR AI FORGETS<br>YOU EXIST.</p>
+                </div>
+                <div class="pitch-col">
+                    <h2 class="pitch-title">THE SOLUTION</h2>
+                    <p>VA-CLAW GIVES IT<br>MEMORY.</p>
+                    <p style="margin-top:20px; color:var(--cyan)">ONE IDENTITY.<br>EVERYWHERE.</p>
+                </div>
+                <div class="pitch-col">
+                    <h2 class="pitch-title">THE RESULT</h2>
+                    <p>AN AI THAT<br>KNOWS YOU.</p>
+                    <p style="margin-top:20px; color:var(--green)">WORKS WHILE<br>YOU SLEEP.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- CAPABILITIES -->
+        <section class="capabilities">
+            <div class="cap-grid">
+                <div class="cap-card pixel-border-violet">
+                    <span class="cap-icon">🧠</span>
+                    <h3 class="cap-name">MEMORY</h3>
+                    <p class="cap-desc">SQLite local DB. Search, list, clear. Persists across sessions.</p>
+                </div>
+                <div class="cap-card pixel-border-violet">
+                    <span class="cap-icon">👤</span>
+                    <h3 class="cap-name">IDENTITY</h3>
+                    <p class="cap-desc">Define who your AI is. Injected into CLAUDE.MD automatically.</p>
+                </div>
+                <div class="cap-card pixel-border-violet">
+                    <span class="cap-icon">⏰</span>
+                    <h3 class="cap-name">LOOP</h3>
+                    <p class="cap-desc">Cron daemon wakes your AI on schedule. Captures output.</p>
+                </div>
+                <div class="cap-card pixel-border-violet">
+                    <span class="cap-icon">💬</span>
+                    <h3 class="cap-name">CHANNELS</h3>
+                    <p class="cap-desc">Discord, Telegram, Slack. Chat with your AI in your favorite apps.</p>
+                </div>
+                <div class="cap-card pixel-border-violet">
+                    <span class="cap-icon">🎯</span>
+                    <h3 class="cap-name">SKILLS</h3>
+                    <p class="cap-desc">Markdown-driven. No compile step. Drop a .md file, it's a skill.</p>
+                </div>
+                <div class="cap-card pixel-border-violet">
+                    <span class="cap-icon">💰</span>
+                    <h3 class="cap-name">YOUR SUB</h3>
+                    <p class="cap-desc">Claude Code sub? Codex plan? Already works. $0 extra.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- INSTALL -->
+        <section id="install" class="install-box">
+            <div class="box-frame">
+╔══════════════════════════════════════╗
+║  INSTALL VA-CLAW IN 30 SECONDS       ║
+╠══════════════════════════════════════╣
+║  $ npm install -g va-claw            ║
+║  $ va-claw install                   ║
+║                                      ║
+║  RUNTIME: NODE >=22                  ║
+╚══════════════════════════════════════╝
+            </div>
+        </section>
+
+        <!-- CLI REFERENCE -->
+        <section class="cli-reference dither-bg">
+            <h2 class="neon-magenta" style="text-align:center; margin-bottom:40px;">CLI REFERENCE</h2>
+            <div class="cli-grid pixel-border-cyan">
+                <div class="cli-col">
+                    <h3># CORE</h3>
+                    <div class="cli-cmd">
+                        <span class="cmd-main">va-claw</span> <span class="cmd-sub">install</span>
+                    </div>
+                    <div class="cli-cmd">
+                        <span class="cmd-main">va-claw</span> <span class="cmd-sub">start</span>
+                    </div>
+                    <div class="cli-cmd">
+                        <span class="cmd-main">va-claw</span> <span class="cmd-sub">stop</span>
+                    </div>
+                    <div class="cli-cmd">
+                        <span class="cmd-main">va-claw</span> <span class="cmd-sub">status</span>
+                    </div>
+                    
+                    <h3 style="margin-top:40px;"># MEMORY</h3>
+                    <div class="cli-cmd">
+                        <span class="cmd-comment"># search your collective memory</span>
+                        <span class="cmd-main">va-claw</span> <span class="cmd-sub">memory search &lt;q&gt;</span>
+                    </div>
+                    <div class="cli-cmd">
+                        <span class="cmd-main">va-claw</span> <span class="cmd-sub">memory list</span>
+                    </div>
+                    <div class="cli-cmd">
+                        <span class="cmd-main">va-claw</span> <span class="cmd-sub">memory clear</span>
+                    </div>
+                </div>
+                <div class="cli-col">
+                    <h3># CHANNELS</h3>
+                    <div class="cli-cmd">
+                        <span class="cmd-main">va-claw</span> <span class="cmd-sub">channel discord setup</span>
+                    </div>
+                    <div class="cli-cmd">
+                        <span class="cmd-main">va-claw</span> <span class="cmd-sub">channel telegram setup</span>
+                    </div>
+                    <div class="cli-cmd">
+                        <span class="cmd-main">va-claw</span> <span class="cmd-sub">channel slack setup</span>
+                    </div>
+
+                    <h3 style="margin-top:40px;"># SKILLS</h3>
+                    <div class="cli-cmd">
+                        <span class="cmd-main">va-claw</span> <span class="cmd-sub">skill list</span>
+                    </div>
+                    <div class="cli-cmd">
+                        <span class="cmd-main">va-claw</span> <span class="cmd-sub">skill add &lt;path&gt;</span>
+                    </div>
+                    <div class="cli-cmd">
+                        <span class="cmd-main">va-claw</span> <span class="cmd-sub">skill show &lt;name&gt;</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- CHANNELS SHOWCASE -->
+        <section class="channels">
+            <div class="channels-grid">
+                <div class="channel-card discord">
+                    <h3 style="margin-bottom:15px">DISCORD</h3>
+                    <p style="font-size:10px">va-claw channel discord setup</p>
+                </div>
+                <div class="channel-card telegram">
+                    <h3 style="margin-bottom:15px">TELEGRAM</h3>
+                    <p style="font-size:10px">va-claw channel telegram setup</p>
+                </div>
+                <div class="channel-card slack">
+                    <h3 style="margin-bottom:15px">SLACK</h3>
+                    <p style="font-size:10px">va-claw channel slack setup</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- FOOTER -->
+        <footer>
+            <p class="neon-text">VA-CLAW // OPEN SOURCE // MIT LICENSE</p>
+            <p style="margin-top:10px; font-size:10px">MADE FOR THE CLAUDE CODE COMMUNITY</p>
+            
+            <div class="footer-links">
+                <a href="https://github.com/Vadaski/va-claw">[ GITHUB ]</a>
+                <a href="https://www.npmjs.com/package/va-claw">[ npm ]</a>
+                <a href="https://github.com/Vadaski/va-claw/issues">[ ISSUES ]</a>
+            </div>
+
+            <p class="quote">"YOUR AI SHOULD REMEMBER YOU."</p>
+        </footer>
+
+    </div>
+
+    <script>
+        // TYPEWRITER EFFECT
+        const terminalContent = [
+            "$ npm install -g va-claw",
+            "█ installing va-claw@0.1.0...",
+            "✓ installed",
+            "",
+            "$ va-claw install --for claude-code",
+            "> who are you? "
+        ];
+
+        const terminalElement = document.getElementById('demo-terminal');
+        let lineIndex = 0;
+        let charIndex = 0;
+
+        function type() {
+            if (lineIndex < terminalContent.length) {
+                let currentLine = terminalContent[lineIndex];
+                if (charIndex < currentLine.length) {
+                    terminalElement.innerHTML += currentLine[charIndex];
+                    charIndex++;
+                    setTimeout(type, 50);
+                } else {
+                    terminalElement.innerHTML += "\n";
+                    lineIndex++;
+                    charIndex = 0;
+                    setTimeout(type, 500);
+                }
+            } else {
+                setTimeout(() => {
+                    terminalElement.innerHTML = "";
+                    lineIndex = 0;
+                    charIndex = 0;
+                    type();
+                }, 5000);
+            }
+        }
+
+        // SCROLL REVEAL
+        const observerOptions = {
+            threshold: 0.1
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                }
+            });
+        }, observerOptions);
+
+        document.querySelectorAll('section').forEach(section => {
+            observer.observe(section);
+        });
+
+        // INIT
+        window.onload = () => {
+            type();
+            
+            // Subtle flicker effect
+            setInterval(() => {
+                const hero = document.querySelector('.hero h1');
+                hero.style.opacity = Math.random() > 0.98 ? '0.7' : '1';
+            }, 100);
+        };
+    </script>
+</body>
+</html>

@@ -1,0 +1,71 @@
+import type {
+  SlackChannel,
+  StartSlackChannelConfig,
+  StartTelegramChannelConfig,
+  TelegramChannel,
+} from "../../channels/dist/index.js";
+import type { DaemonStatus, ServiceType, VaClawConfig } from "@va-claw/daemon";
+import type { MemoryEntry } from "@va-claw/memory";
+import type { SkillDefinition } from "../../skills/dist/index.js";
+
+export type InstallTarget = "claude-code" | "codex" | "all";
+
+export type MarkerPair = {
+  start: string;
+  end: string;
+};
+
+export type OutputStream = {
+  write(chunk: string): boolean;
+};
+
+export type SpawnResult = {
+  status: number | null;
+  stdout: string;
+  stderr: string;
+};
+
+export type SpawnFn = (
+  command: string,
+  args: string[],
+  options?: { encoding: "utf8" },
+) => SpawnResult;
+
+export type CliDeps = {
+  claudePath: string;
+  codexPath: string;
+  configPath: string;
+  memoryDbPath: string;
+  platform: NodeJS.Platform;
+  spawnSync: SpawnFn;
+  stdout: OutputStream;
+  stderr: OutputStream;
+  fileExists: (path: string) => Promise<boolean>;
+  readTextFile: (path: string) => Promise<string>;
+  upsertManagedBlock: (path: string, block: string, markers: MarkerPair) => Promise<void>;
+  removeManagedBlock: (path: string, markers: MarkerPair) => Promise<void>;
+  wrapCodexPrompt: (prompt: string) => string;
+  loadIdentity: () => Promise<VaClawConfig>;
+  saveIdentity: (config: VaClawConfig) => Promise<void>;
+  runInstallWizard: () => Promise<VaClawConfig>;
+  toClaudeMdSnippet: (config: VaClawConfig) => string;
+  toCodexSystemPrompt: (config: VaClawConfig) => string;
+  installDaemonService: (type: ServiceType) => Promise<void>;
+  uninstallDaemonService: (type: ServiceType) => Promise<void>;
+  startDaemon: (config: VaClawConfig) => Promise<void>;
+  stopDaemon: () => Promise<void>;
+  getDaemonStatus: () => Promise<DaemonStatus>;
+  memorySearch: (query: string, limit: number) => Promise<MemoryEntry[]>;
+  memoryList: (limit: number) => Promise<MemoryEntry[]>;
+  memoryClear: () => Promise<void>;
+  startTelegramChannel: (config: StartTelegramChannelConfig) => Promise<TelegramChannel>;
+  stopTelegramChannel: (channel: TelegramChannel) => Promise<void>;
+  startSlackChannel: (config: StartSlackChannelConfig) => Promise<SlackChannel>;
+  stopSlackChannel: (channel: SlackChannel) => Promise<void>;
+  skillInstall: (content: string, name: string) => Promise<string>;
+  skillList: (dir?: string) => Promise<SkillDefinition[]>;
+  skillLoad: (nameOrPath: string) => Promise<SkillDefinition>;
+  skillRemove: (name: string) => Promise<void>;
+  confirm: (message: string) => Promise<boolean>;
+  prompt: (message: string, initialValue?: string) => Promise<string>;
+};
