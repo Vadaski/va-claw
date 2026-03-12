@@ -1,86 +1,203 @@
-# va-claw
+<h1 align="center">va-claw</h1>
 
-[![CI](https://github.com/vadaski/va-claw-plugin/actions/workflows/ci.yml/badge.svg)](https://github.com/vadaski/va-claw-plugin/actions/workflows/ci.yml)
-[![npm](https://img.shields.io/npm/v/va-claw.svg)](https://www.npmjs.com/package/va-claw)
-[![License](https://img.shields.io/github/license/vadaski/va-claw-plugin.svg)](LICENSE)
+<p align="center">
+  <b>Turn your Claude Code or OpenCode into an OpenClaw — in 30 seconds.</b>
+</p>
 
-Persistent local memory, identity, and wake-loop automation for Claude Code and Codex.
+<p align="center">
+  <a href="https://github.com/Vadaski/va-claw/actions/workflows/ci.yml">
+    <img src="https://github.com/Vadaski/va-claw/actions/workflows/ci.yml/badge.svg" alt="CI">
+  </a>
+  <a href="https://www.npmjs.com/package/va-claw">
+    <img src="https://img.shields.io/npm/v/va-claw.svg" alt="npm">
+  </a>
+  <a href="LICENSE">
+    <img src="https://img.shields.io/github/license/Vadaski/va-claw.svg" alt="License">
+  </a>
+  <a href="https://www.npmjs.com/package/va-claw">
+    <img src="https://img.shields.io/npm/dm/va-claw.svg" alt="Downloads">
+  </a>
+</p>
 
-`va-claw` installs a saved identity into your CLI agents, keeps local memory in SQLite, and runs a background loop that wakes the available agent and writes the result back into memory.
+<p align="center">
+  <a href="#quick-start">Quick Start</a> •
+  <a href="#how-it-works">How It Works</a> •
+  <a href="#features">Features</a> •
+  <a href="#channels">Channels</a> •
+  <a href="#vs-openclaw">vs OpenClaw</a>
+</p>
 
-## Install
+---
 
-Runtime: Node `>=22`.
+## What is va-claw?
+
+**va-claw** is a minimal plugin that adds OpenClaw's three core superpowers to any CLI agent you already have:
+
+| | Without va-claw | With va-claw |
+|---|---|---|
+| **Memory** | Session resets every time | Persistent SQLite memory, semantic search |
+| **Identity** | Generic assistant | Named persona injected into every session |
+| **Wake Loop** | You have to prompt it | Scheduled daemon wakes the agent for you |
+
+> *No new gateway. No new CLI to learn. Just install the plugin and your existing `claude` or `codex` becomes persistent, self-aware, and autonomous.*
+
+---
+
+## Quick Start
+
+### Prerequisites
+
+- **Node.js** >= 22
+- **Claude Code** (`npm install -g @anthropic-ai/claude-code`) or **OpenCode / Codex** installed
+
+### Install & go
 
 ```bash
 npm install -g va-claw
-va-claw install
+va-claw install        # injects identity into ~/.claude/CLAUDE.md or ~/.codex/instructions.md
+va-claw start          # starts the wake-loop daemon
 ```
 
-## Three Capabilities
+That's it. Your CLI agent now has memory, an identity, and runs autonomously in the background.
 
-### memory
-
-Local SQLite memory for wake outputs. Search it, list it, clear it, and keep continuity outside any single CLI session.
-
-### identity
-
-One saved identity, rendered into managed blocks for `~/.claude/CLAUDE.md` and `~/.codex/instructions.md`, with name, persona, system prompt, wake prompt, and loop interval.
-
-### loop
-
-A local daemon loop that wakes `claude` or `codex` on a cron schedule, captures the wake output, and stores it back into memory.
-
-## CLI Quick Reference
+### First steps
 
 ```bash
-va-claw install [--for claude-code|codex|all]
-va-claw start
-va-claw stop
-va-claw status
-va-claw uninstall
-
-va-claw memory search <query>
+# See what your agent has been doing
 va-claw memory list
-va-claw memory clear
+
+# Search across all past wake outputs
+va-claw memory search "what was I working on"
+
+# Check daemon health
+va-claw status
 ```
 
-## Relation to open-claw
+---
 
-`va-claw` is inspired by `open-claw`: the same local-first, continuity-focused direction, but implemented independently for this repo as a smaller CLI-centered stack around memory, identity injection, and wake-loop automation.
+## How It Works
 
-## Badges
+```
+ ┌──────────────────┐       ┌──────────────────┐
+ │   Claude Code    │       │  OpenCode/Codex  │
+ └────────┬─────────┘       └────────┬─────────┘
+          │  identity injected        │  identity injected
+          │  via CLAUDE.md / instructions.md
+          └──────────┬───────────────┘
+                     │
+          ┌──────────▼───────────┐
+          │    va-claw Daemon    │
+          │                      │
+          │  ┌────────────────┐  │
+          │  │  Wake Loop     │  │  ← cron schedule, runs silently
+          │  │  (croner)      │  │
+          │  └───────┬────────┘  │
+          │          │           │
+          │  ┌───────▼────────┐  │
+          │  │  Memory Store  │  │  ← SQLite, ~/.va-claw/memory.db
+          │  │  (node:sqlite) │  │
+          │  └───────┬────────┘  │
+          │          │           │
+          │  ┌───────▼────────┐  │
+          │  │  Skills Layer  │  │  ← Markdown-based, zero compile
+          │  └────────────────┘  │
+          └──────────────────────┘
+                     │
+         ┌───────────┼───────────┐
+         │           │           │
+    ┌────▼────┐ ┌────▼────┐ ┌───▼─────┐
+    │ Discord │ │Telegram │ │  Slack  │
+    └─────────┘ └─────────┘ └─────────┘
+```
 
-- CI: GitHub Actions
-- Package: npm
-- License: MIT
+**One daemon. Local SQLite. Zero cloud dependency.** Wake outputs are automatically stored in memory so your next session always has context.
 
-## Contributing
+---
 
-- See [CONTRIBUTING.md](CONTRIBUTING.md).
+## Features
+
+### 🧠 Memory
+
+Local SQLite, zero config, persists across every session.
+
+```bash
+va-claw memory search "refactor auth"   # semantic search
+va-claw memory list                     # recent entries
+va-claw memory clear                    # start fresh
+```
+
+### 🎭 Identity
+
+Define your agent's name, persona, and behavior once — injected automatically into every Claude Code or OpenCode session.
+
+```bash
+va-claw identity setup    # interactive wizard
+va-claw identity show     # view current config
+```
+
+Config lives at `~/.va-claw/config.json`:
+
+```json
+{
+  "name": "Nova",
+  "persona": "Precise and calm. Senior engineer mindset.",
+  "systemPrompt": "Act with continuity. Check memory before starting.",
+  "wakePrompt": "Check repo status and summarize what needs attention.",
+  "loopInterval": "0 * * * *"
+}
+```
+
+### ⏰ Wake Loop
+
+A local cron daemon that wakes your agent on a schedule and writes the output back into memory.
+
+```bash
+va-claw start      # start the daemon
+va-claw stop       # stop the daemon
+va-claw status     # check health + last wake time
+```
+
+Use cases: daily standup summaries, repo health checks, automated PR reviews, background research.
+
+---
 
 ## Skills
 
-va-claw supports local Markdown-based skills to extend behavior.
-
-Install a skill file:
+Extend behavior with plain Markdown files — no compilation, no config:
 
 ```bash
-va-claw skill add ./my-skill.md
-```
+va-claw skill add ./my-skill.md                          # local file
+va-claw skill add https://example.com/skills/git.md      # remote URL
 
-### Skill commands
-
-```bash
 va-claw skill list
-va-claw skill add <path-or-url>
-va-claw skill remove <name>
 va-claw skill show <name>
+va-claw skill remove <name>
 ```
+
+A skill file looks like this:
+
+```markdown
+---
+name: git-hygiene
+description: Check for stale branches and large commits
+version: 1.0.0
+triggers:
+  - git
+  - branch
+  - commit
+---
+
+When checking the repository, always:
+1. List branches older than 30 days
+2. Flag commits larger than 500 lines
+3. Suggest a cleanup plan
+```
+
+---
 
 ## Channels
 
-va-claw can connect to external channels for wake loop input/output.
+Connect your wake loop to Discord, Telegram, or Slack to receive outputs and send commands remotely.
 
 ### Discord
 
@@ -93,48 +210,75 @@ va-claw channel discord status
 ### Telegram
 
 ```bash
-va-claw channel telegram setup --token <token> [--cli-command <command>]
+va-claw channel telegram setup --token <bot-token>
 va-claw channel telegram start
-va-claw channel telegram status
 ```
 
 ### Slack
 
 ```bash
-va-claw channel slack setup --bot-token <token> --app-token <token> [--cli-command <command>]
+va-claw channel slack setup --bot-token <xoxb-...> --app-token <xapp-...>
 va-claw channel slack start
-va-claw channel slack status
 ```
 
-## Complete CLI command table
+---
+
+## Full CLI Reference
 
 ```bash
+# Core
 va-claw install [--for claude-code|codex|all]
-va-claw start
-va-claw stop
-va-claw status
-va-claw uninstall
+va-claw start | stop | status | uninstall
 
+# Identity
+va-claw identity setup | show | edit
+
+# Memory
 va-claw memory search <query>
-va-claw memory list
+va-claw memory list [--limit <n>]
 va-claw memory clear
 
-va-claw skill list
-va-claw skill add <path-or-url>
-va-claw skill remove <name>
-va-claw skill show <name>
+# Skills
+va-claw skill list | add <path-or-url> | remove <name> | show <name>
 
-va-claw channel discord setup
-va-claw channel discord start
-va-claw channel discord status
-va-claw channel telegram setup --token <token> [--cli-command <command>]
-va-claw channel telegram start
-va-claw channel telegram status
-va-claw channel slack setup --bot-token <token> --app-token <token> [--cli-command <command>]
-va-claw channel slack start
-va-claw channel slack status
+# Channels
+va-claw channel discord  setup | start | stop | status
+va-claw channel telegram setup --token <t> | start | stop | status
+va-claw channel slack    setup --bot-token <t> --app-token <t> | start | stop | status
 ```
+
+---
+
+## vs OpenClaw
+
+| | **va-claw** | **OpenClaw** |
+|---|---|---|
+| **Concept** | Plugin for your existing CLI | Standalone AI agent system |
+| **Install** | `npm install -g va-claw` | Full gateway setup |
+| **Agents** | Claude Code, OpenCode, Codex | Own runtime |
+| **Memory** | SQLite (local) | SQLite + Markdown compaction |
+| **Channels** | Discord, Telegram, Slack | WhatsApp, iMessage, + more |
+| **Footprint** | ~2 MB, zero cloud deps | Full service stack |
+| **Best for** | Devs who already use Claude Code / Codex | Users who want a dedicated agent |
+
+**va-claw = OpenClaw's soul, Claude Code's body.** If you're already paying for Claude Code or OpenCode, don't run a separate agent stack — just add the three superpowers you're missing.
+
+---
+
+## Development
+
+```bash
+git clone https://github.com/Vadaski/va-claw.git
+cd va-claw
+pnpm install
+pnpm build
+pnpm test
+```
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for contribution guidelines.
+
+---
 
 ## License
 
-This project is licensed under the [MIT License](LICENSE).
+[MIT](LICENSE) © Vadaski

@@ -1,6 +1,27 @@
 {
   "name": "va-claw",
   "version": "0.1.0",
+  "description": "Persistent memory, identity, and wake-loop daemon for Claude Code & Codex",
+  "keywords": [
+    "claude-code",
+    "codex",
+    "ai-agent",
+    "memory",
+    "daemon",
+    "cli-plugin",
+    "llm",
+    "automation"
+  ],
+  "author": "Vadaski",
+  "license": "MIT",
+  "homepage": "https://vadaski.github.io/va-claw",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Vadaski/va-claw.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Vadaski/va-claw/issues"
+  },
   "bin": {
     "va-claw": "./packages/cli/dist/bin/va-claw.mjs"
   },
@@ -12,7 +33,9 @@
     "packages/channels/*"
   ],
   "scripts": {
-    "build": "tsc -b"
+    "build": "tsc -b",
+    "test": "node --test packages/*/dist/*.test.js",
+    "prepublishOnly": "pnpm run build"
   },
   "devDependencies": {
     "typescript": "file:vendor/typescript"
