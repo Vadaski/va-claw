@@ -533,14 +533,21 @@
         <!-- INSTALL -->
         <section id="install" class="install-box">
             <div class="box-frame">
-╔══════════════════════════════════════╗
-║  INSTALL VA-CLAW IN 30 SECONDS       ║
-╠══════════════════════════════════════╣
-║  $ npm install -g va-claw            ║
-║  $ va-claw install                   ║
-║                                      ║
-║  RUNTIME: NODE >=22                  ║
-╚══════════════════════════════════════╝
+╔══════════════════════════════════════════════════════════╗
+║  INSTALL VA-CLAW IN 30 SECONDS                           ║
+╠══════════════════════════════════════════════════════════╣
+║                                                          ║
+║  OPTION 1 — DROP THE SKILL (let your agent do it)        ║
+║  $ /install https://raw.githubusercontent.com/           ║
+║    Vadaski/va-claw/main/skills/install-va-claw.md        ║
+║                                                          ║
+║  OPTION 2 — MANUAL                                       ║
+║  $ npm install -g va-claw                                ║
+║  $ va-claw install                                       ║
+║  $ va-claw start                                         ║
+║                                                          ║
+║  RUNTIME: NODE >=22                                      ║
+╚══════════════════════════════════════════════════════════╝
             </div>
         </section>
 
@@ -565,14 +572,30 @@
                     
                     <h3 style="margin-top:40px;"># MEMORY</h3>
                     <div class="cli-cmd">
-                        <span class="cmd-comment"># search your collective memory</span>
-                        <span class="cmd-main">va-claw</span> <span class="cmd-sub">memory search &lt;q&gt;</span>
+                        <span class="cmd-comment"># store named memory with tags</span>
+                        <span class="cmd-main">va-claw</span> <span class="cmd-sub">memory memorize &lt;key&gt; &lt;essence&gt;</span>
+                    </div>
+                    <div class="cli-cmd">
+                        <span class="cmd-main">va-claw</span> <span class="cmd-sub">memory get &lt;key&gt;</span>
+                    </div>
+                    <div class="cli-cmd">
+                        <span class="cmd-main">va-claw</span> <span class="cmd-sub">memory update &lt;key&gt;</span>
+                    </div>
+                    <div class="cli-cmd">
+                        <span class="cmd-main">va-claw</span> <span class="cmd-sub">memory forget &lt;key&gt;</span>
+                    </div>
+                    <div class="cli-cmd">
+                        <span class="cmd-main">va-claw</span> <span class="cmd-sub">memory recall &lt;query&gt;</span>
                     </div>
                     <div class="cli-cmd">
                         <span class="cmd-main">va-claw</span> <span class="cmd-sub">memory list</span>
                     </div>
                     <div class="cli-cmd">
-                        <span class="cmd-main">va-claw</span> <span class="cmd-sub">memory clear</span>
+                        <span class="cmd-comment"># ebbinghaus consolidation</span>
+                        <span class="cmd-main">va-claw</span> <span class="cmd-sub">memory consolidate</span>
+                    </div>
+                    <div class="cli-cmd">
+                        <span class="cmd-main">va-claw</span> <span class="cmd-sub">memory reflect</span>
                     </div>
                 </div>
                 <div class="cli-col">

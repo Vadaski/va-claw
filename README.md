@@ -20,6 +20,7 @@
 </p>
 
 <p align="center">
+  <a href="https://vadaski.github.io/va-claw">🌐 Website</a> •
   <a href="#quick-start">Quick Start</a> •
   <a href="#how-it-works">How It Works</a> •
   <a href="#features">Features</a> •
@@ -40,6 +41,23 @@
 | **Wake Loop** | You have to prompt it | Scheduled daemon wakes the agent for you |
 
 > *No new gateway. No new CLI to learn. Just install the plugin and your existing `claude` or `codex` becomes persistent, self-aware, and autonomous.*
+
+---
+
+## Install via Skill (zero-effort setup)
+
+The fastest way to install va-claw is to drop the install skill into any Claude Code or OpenCode session. The agent will handle everything — checking prerequisites, running the install, configuring identity, and starting the daemon.
+
+```bash
+# In any Claude Code or OpenCode session, run:
+/install https://raw.githubusercontent.com/Vadaski/va-claw/main/skills/install-va-claw.md
+```
+
+Or add it as a persistent skill so any future agent can self-install va-claw:
+
+```bash
+va-claw skill add https://raw.githubusercontent.com/Vadaski/va-claw/main/skills/install-va-claw.md
+```
 
 ---
 
@@ -67,7 +85,7 @@ That's it. Your CLI agent now has memory, an identity, and runs autonomously in 
 va-claw memory list
 
 # Search across all past wake outputs
-va-claw memory search "what was I working on"
+va-claw memory recall "what was I working on"
 
 # Check daemon health
 va-claw status
@@ -118,13 +136,42 @@ va-claw status
 
 ### 🧠 Memory
 
-Local SQLite, zero config, persists across every session.
+Structured SQLite memory with full CRUD, Ebbinghaus forgetting curve, and weighted recall. Your agent doesn't just log outputs — it remembers, forgets, and gets smarter over time.
+
+**Store a named memory:**
 
 ```bash
-va-claw memory search "refactor auth"   # semantic search
-va-claw memory list                     # recent entries
-va-claw memory clear                    # start fresh
+va-claw memory memorize "auth-pattern" \
+  "Always use JWT with 1h expiry and refresh token rotation" \
+  --tags auth,security \
+  --importance 0.9 \
+  --details "Single-use refresh tokens mandatory after Feb incident"
 ```
+
+**Full CRUD:**
+
+```bash
+va-claw memory get auth-pattern                        # retrieve by key
+va-claw memory update auth-pattern --importance 1.0    # patch fields
+va-claw memory forget auth-pattern                     # delete one memory
+va-claw memory clear                                   # wipe all
+```
+
+**Recall:**
+
+```bash
+va-claw memory recall "JWT authentication"   # weighted: tags > triggers > essence > details
+va-claw memory list --limit 20               # recent entries
+```
+
+**Maintenance (Ebbinghaus model):**
+
+```bash
+va-claw memory consolidate   # prune faded memories, reinforce recently accessed
+va-claw memory reflect       # Markdown summary grouped by tag
+```
+
+Every memory has `strength`, `importance`, and `decayTau`. High-importance memories decay ~3× slower. Accessing a memory reinforces it. `consolidate` runs the forgetting curve and cleans up dead entries automatically.
 
 ### 🎭 Identity
 
@@ -233,9 +280,15 @@ va-claw start | stop | status | uninstall
 # Identity
 va-claw identity setup | show | edit
 
-# Memory
-va-claw memory search <query>
+# Memory — full CRUD + Ebbinghaus lifecycle
+va-claw memory memorize <key> <essence> [--tags t1,t2] [--details "..."] [--importance 0-1]
+va-claw memory get <key>
+va-claw memory update <key> [--essence "..."] [--tags "..."] [--importance 0-1] [--details "..."]
+va-claw memory forget <key>
+va-claw memory recall <query> [--limit <n>]
 va-claw memory list [--limit <n>]
+va-claw memory consolidate
+va-claw memory reflect
 va-claw memory clear
 
 # Skills
