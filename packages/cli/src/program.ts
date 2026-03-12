@@ -7,8 +7,15 @@ import {
   runDiscordStart,
   runDiscordStatus,
   runMemoryClear,
+  runMemoryConsolidate,
   runMemoryList,
+  runMemoryReflect,
+  runMemoryGet,
+  runMemoryForget,
   runMemorySearch,
+  runMemoryMemorize,
+  runMemoryRecall,
+  runMemoryUpdate,
   runSkillAdd,
   runSkillList,
   runSkillRemove,
@@ -50,7 +57,49 @@ export function createCliProgram(deps: CliDeps = createDefaultCliDeps()): Comman
     .description("Search memory.")
     .argument("<query>")
     .action(async (query: string) => runMemorySearch(query, deps));
+  memory
+    .command("memorize")
+    .description("Store or update a memory entry by key.")
+    .argument("<key>")
+    .argument("<essence>")
+    .option("--tags <tags>", "Comma-separated tags.")
+    .option("--details <details>", "Details text.")
+    .option("--importance <importance>", "Importance from 0 to 1.")
+    .action((key: string, essence: string, options: { tags?: string; details?: string; importance?: string }) =>
+      runMemoryMemorize(key, essence, options, deps),
+    );
+  memory
+    .command("get")
+    .description("Get a memory entry by key.")
+    .argument("<key>")
+    .action(async (key: string) => runMemoryGet(key, deps));
+  memory
+    .command("update")
+    .description("Update a memory entry by key.")
+    .argument("<key>")
+    .option("--essence <essence>", "Replace essence text.")
+    .option("--tags <tags>", "Comma-separated tags.")
+    .option("--importance <importance>", "Importance from 0 to 1.")
+    .option("--details <details>", "Replace details text.")
+    .action((key: string, options: { essence?: string; tags?: string; importance?: string; details?: string }) =>
+      runMemoryUpdate(key, options, deps),
+    );
   memory.command("list").description("List recent memory entries.").action(async () => runMemoryList(deps));
+  memory
+    .command("forget")
+    .description("Forget a memory by key.")
+    .argument("<key>")
+    .action(async (key: string) => runMemoryForget(key, deps));
+  memory
+    .command("recall")
+    .description("Recall memories by query.")
+    .argument("<query>")
+    .option("--limit <limit>", "Max results.")
+    .action((query: string, options: { limit?: string }) =>
+      runMemoryRecall(query, options.limit ? Number(options.limit) : 5, deps),
+    );
+  memory.command("consolidate").description("Consolidate memory store.").action(async () => runMemoryConsolidate(deps));
+  memory.command("reflect").description("Reflect memory map grouped by tags.").action(async () => runMemoryReflect(deps));
   memory.command("clear").description("Clear all memory entries.").action(async () => runMemoryClear(deps));
 
   const skill = program.command("skill").description("Skill operations.");

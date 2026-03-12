@@ -12,6 +12,13 @@ test("registers top-level and memory commands", () => {
   ok(/\bstart\b/.test(help));
   ok(/\bstatus\b/.test(help));
   ok(/\bmemory search\b/.test(help));
+  ok(/\bmemory memorize\b/.test(help));
+  ok(/\bmemory get\b/.test(help));
+  ok(/\bmemory update\b/.test(help));
+  ok(/\bmemory forget\b/.test(help));
+  ok(/\bmemory recall\b/.test(help));
+  ok(/\bmemory consolidate\b/.test(help));
+  ok(/\bmemory reflect\b/.test(help));
   ok(/\bmemory clear\b/.test(help));
   ok(/\bskill list\b/.test(help));
   ok(/\bskill add\b/.test(help));

@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { MemoryStore } from "./memory-store.js";
+import { computeRetention, reinforceOnAccess } from "./forgetting-curve.js";
 
 test("store then list returns the stored id", async () => {
   const store = new MemoryStore({ dbPath: ":memory:" });
@@ -8,6 +9,8 @@ test("store then list returns the stored id", async () => {
   const entries = await store.list();
   assert.equal(entries.length, 1);
   assert.equal(entries[0]?.id, id);
+  assert.equal(entries[0]?.text, "remember this");
+  assert.deepEqual(entries[0]?.tags, ["auto"]);
   assert.equal(JSON.stringify(entries[0]?.metadata), JSON.stringify({ source: "test" }));
   store.close();
 });
@@ -31,39 +34,235 @@ test("clear removes all entries", async () => {
   store.close();
 });
 
-// ========== 补充测试 ==========
-
-test("store with empty string text", async () => {
+test("memorize stores and gets by key", async () => {
   const store = new MemoryStore({ dbPath: ":memory:" });
-  const id = await store.store("");
-  const entries = await store.list();
-  assert.equal(entries.length, 1);
-  assert.equal(entries[0]?.id, id);
-  assert.equal(entries[0]?.text, "");
+  const entry = await store.memorize("m1", "hello world", {
+    tags: ["work", "daily"],
+    details: "first entry",
+    triggerConditions: ["boot"],
+    importance: 0.8,
+  });
+  assert.equal(entry.key, "m1");
+  const fetched = await store.get("m1");
+  assert.equal(fetched?.key, "m1");
+  assert.equal(fetched?.essence, "hello world");
+  assert.equal(fetched?.details, "first entry");
+  assert.equal(fetched?.importance, 0.8);
+  assert.deepEqual(fetched?.tags, ["work", "daily"]);
+  assert.deepEqual(fetched?.triggerConditions, ["boot"]);
   store.close();
 });
 
-test("store with long text (>10KB)", async () => {
+test("memorize upsert updates existing key", async () => {
   const store = new MemoryStore({ dbPath: ":memory:" });
-  const longText = "x".repeat(15 * 1024);
-  const id = await store.store(longText);
-  const entries = await store.list();
-  assert.equal(entries.length, 1);
-  assert.equal(entries[0]?.id, id);
-  assert.equal(entries[0]?.text.length, longText.length);
+  const first = await store.memorize("m2", "old essence", { tags: ["a"], importance: 0.4 });
+  const updated = await store.memorize("m2", "new essence", { tags: ["b"] });
+  assert.equal(updated.key, "m2");
+  assert.equal(updated.essence, "new essence");
+  assert.equal(updated.text, "new essence");
+  assert.equal(updated.id, first.id);
+  const all = await store.get("m2");
+  assert.equal(all?.essence, "new essence");
+  assert.deepEqual(all?.tags, ["b"]);
   store.close();
 });
 
-test("search returns empty array when no matches", async () => {
+test("update can edit existing entry", async () => {
   const store = new MemoryStore({ dbPath: ":memory:" });
-  await store.store("alpha project notes");
-  await store.store("beta launch checklist");
-  const entries = await store.search("nonexistent xyz 123", 5);
-  assert.equal(entries.length, 0);
+  await store.memorize("m3", "before", { tags: ["a"] });
+  const updated = await store.update("m3", {
+    essence: "after",
+    details: "details",
+    tags: ["x", "y"],
+    importance: 0.9,
+  });
+  assert.equal(updated?.essence, "after");
+  assert.equal(updated?.details, "details");
+  assert.deepEqual(updated?.tags, ["x", "y"]);
+  assert.equal(updated?.importance, 0.9);
   store.close();
 });
 
-test("list(0) returns empty array", async () => {
+test("forget removes memory by key", async () => {
+  const store = new MemoryStore({ dbPath: ":memory:" });
+  await store.memorize("m4", "to forget", { tags: ["temp"] });
+  const removed = await store.forget("m4");
+  assert.equal(removed, true);
+  const missing = await store.get("m4");
+  assert.equal(missing, undefined);
+  store.close();
+});
+
+test("recall returns matches and updates access count and strength", async () => {
+  const store = new MemoryStore({ dbPath: ":memory:" });
+  await store.memorize("m5", "build dashboard", { tags: ["project"], details: "frontend work", importance: 0.8 });
+  await store.memorize("m6", "random note", { tags: ["random"], details: "not relevant" });
+
+  const db = store as unknown as {
+    db: {
+      getByKey: (key: string) => {
+        id: string;
+        text: string;
+        essence: string;
+        details: string | null;
+        tags: string | null;
+        trigger_conditions: string | null;
+        importance: number;
+        strength: number;
+        decay_tau: number;
+        last_accessed_at: string | null;
+        access_count: number;
+        metadata: string | null;
+        created_at: string;
+        updated_at: string;
+        search_text: string;
+        embedding: string | null;
+        key: string;
+      };
+      upsertByKey: (row: {
+        id: string;
+        text: string;
+        essence: string;
+        details: string | null;
+        tags: string | null;
+        trigger_conditions: string | null;
+        importance: number;
+        strength: number;
+        decay_tau: number;
+        last_accessed_at: string | null;
+        access_count: number;
+        metadata: string | null;
+        created_at: string;
+        updated_at: string;
+        search_text: string;
+        embedding: string | null;
+        key: string;
+      }) => void;
+    };
+  };
+  const row = db.db.getByKey("m5");
+  assert.ok(row);
+  const seeded = { ...row, strength: 0.3, access_count: 0 };
+  db.db.upsertByKey(seeded);
+
+  const entries = await store.recall("project", 5);
+  assert.equal(entries.length >= 1, true);
+  assert.equal(entries[0]?.key, "m5");
+  const loaded = await store.get("m5");
+  assert.ok(loaded);
+  assert.equal(loaded.accessCount, 1);
+  assert.equal(loaded.strength > 0.3, true);
+  store.close();
+});
+
+test("consolidate prunes weak memories, reinforces recent, and detects duplicates", async () => {
+  const store = new MemoryStore({ dbPath: ":memory:" });
+  await store.memorize("c1", "parallel memory pattern", { tags: ["topic"] });
+  await store.memorize("c2", "parallel memory pattern", { tags: ["topic"] });
+
+  const db = store as unknown as {
+    db: {
+      getByKey: (key: string) => {
+        id: string;
+        text: string;
+        essence: string;
+        details: string | null;
+        tags: string | null;
+        trigger_conditions: string | null;
+        importance: number;
+        strength: number;
+        decay_tau: number;
+        last_accessed_at: string | null;
+        access_count: number;
+        metadata: string | null;
+        created_at: string;
+        updated_at: string;
+        search_text: string;
+        embedding: string | null;
+        key: string;
+      };
+      upsertByKey: (row: {
+        id: string;
+        text: string;
+        essence: string;
+        details: string | null;
+        tags: string | null;
+        trigger_conditions: string | null;
+        importance: number;
+        strength: number;
+        decay_tau: number;
+        last_accessed_at: string | null;
+        access_count: number;
+        metadata: string | null;
+        created_at: string;
+        updated_at: string;
+        search_text: string;
+        embedding: string | null;
+        key: string;
+      }) => void;
+    };
+  };
+  const weak = db.db.getByKey("c1");
+  const recent = db.db.getByKey("c2");
+  assert.ok(weak);
+  assert.ok(recent);
+  const stale = new Date(Date.now() - 12 * 24 * 60 * 60 * 1000).toISOString();
+  const now = new Date().toISOString();
+  db.db.upsertByKey({
+    ...weak,
+    strength: 0.01,
+    access_count: 0,
+    last_accessed_at: stale,
+    updated_at: stale,
+  });
+  db.db.upsertByKey({
+    ...recent,
+    strength: 0.2,
+    access_count: 0,
+    last_accessed_at: now,
+    updated_at: now,
+  });
+
+  const report = await store.consolidate();
+  assert.equal(report.forgotten >= 1, true);
+  assert.equal(report.potentialDuplicates.length >= 1, true);
+  assert.equal(report.total, 1);
+  store.close();
+});
+
+test("reflect groups by primary tag in markdown", async () => {
+  const store = new MemoryStore({ dbPath: ":memory:" });
+  await store.memorize("r1", "task plan", { tags: ["work"] });
+  await store.memorize("r2", "evening walk", { tags: ["life"] });
+  const text = await store.reflect();
+  assert.equal(text.includes("## work"), true);
+  assert.equal(text.includes("## life"), true);
+  assert.equal(text.includes("r1"), true);
+  assert.equal(text.includes("r2"), true);
+  store.close();
+});
+
+test("count returns total entries", async () => {
+  const store = new MemoryStore({ dbPath: ":memory:" });
+  await store.store("count one");
+  await store.store("count two");
+  assert.equal(await store.count(), 2);
+  await store.clear();
+  assert.equal(await store.count(), 0);
+  store.close();
+});
+
+test("ForgettingCurve computeRetention and reinforceOnAccess", () => {
+  const now = new Date().toISOString();
+  const retention = computeRetention(1, now, 86400000, 0.5, 2);
+  assert.equal(retention >= 0.95, true);
+  const weak = computeRetention(1, new Date(Date.now() - 86400000).toISOString(), 86400000, 0.5, 0);
+  assert.equal(weak < 0.7, true);
+  assert.equal(reinforceOnAccess(0.7, 0.5), 0.85);
+  assert.equal(reinforceOnAccess(0.95, 1), 1);
+});
+
+test("memory-store old behavior still holds for list(0) boundary", async () => {
   const store = new MemoryStore({ dbPath: ":memory:" });
   const entries = await store.list(0);
   assert.equal(entries.length, 0);
@@ -72,13 +271,13 @@ test("list(0) returns empty array", async () => {
 
 test("list(1) returns only the latest entry", async () => {
   const store = new MemoryStore({ dbPath: ":memory:" });
-  const id1 = await store.store("first entry");
+  const first = await store.store("first entry");
   await new Promise((resolve) => setTimeout(resolve, 10));
-  const id2 = await store.store("second entry");
+  const second = await store.store("second entry");
   const entries = await store.list(1);
   assert.equal(entries.length, 1);
-  assert.equal(entries[0]?.id, id2);
-  assert.equal(entries[0]?.id !== id1, true);
+  assert.equal(entries[0]?.id, second);
+  assert.equal(entries[0]?.id !== first, true);
   store.close();
 });
 

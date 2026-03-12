@@ -63,6 +63,14 @@ export function createTestDeps(overrides: Partial<CliDeps> = {}): CliDeps & { ou
       overrides.getDaemonStatus ??
       (async () => ({ running: false, wakeCount: 0, discord: "disconnected" } satisfies DaemonStatus)),
     memorySearch: overrides.memorySearch ?? (async () => [] satisfies MemoryEntry[]),
+    memoryMemorize: overrides.memoryMemorize ?? (async () => ({ id: "id", key: "key", text: "", essence: "", tags: [], triggerConditions: [], importance: 0.5, strength: 1, decayTau: 86400000, accessCount: 0, metadata: null, createdAt: "", updatedAt: "" })),
+    memoryGet: overrides.memoryGet ?? (async () => undefined),
+    memoryUpdate: overrides.memoryUpdate ?? (async () => undefined),
+    memoryForget: overrides.memoryForget ?? (async () => false),
+    memoryRecall: overrides.memoryRecall ?? (async () => []),
+    memoryConsolidate: overrides.memoryConsolidate ?? (async () => ({ forgotten: 0, strengthened: 0, total: 0, potentialDuplicates: [] })),
+    memoryReflect: overrides.memoryReflect ?? (async () => ""),
+    memoryCount: overrides.memoryCount ?? (async () => 0),
     memoryList: overrides.memoryList ?? (async () => [] satisfies MemoryEntry[]),
     memoryClear: overrides.memoryClear ?? (async () => {}),
     startTelegramChannel:

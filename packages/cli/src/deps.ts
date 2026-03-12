@@ -14,7 +14,19 @@ import {
   toCodexSystemPrompt,
   uninstallDaemonService,
 } from "./deps-exports.js";
-import { clear, list, search } from "@va-claw/memory";
+import {
+  clear,
+  consolidate,
+  count,
+  get,
+  list,
+  memorize,
+  recall,
+  reflect,
+  search,
+  update,
+  forget,
+} from "@va-claw/memory";
 import { installSkill, listSkills, loadSkill, removeSkill } from "../../skills/dist/index.js";
 
 import {
@@ -53,6 +65,14 @@ export function createDefaultCliDeps(): CliDeps {
     startDaemon,
     stopDaemon,
     getDaemonStatus,
+    memoryMemorize: (key, essence, options) => memorize(key, essence, options),
+    memoryGet: (key) => get(key),
+    memoryUpdate: (key, changes) => update(key, changes),
+    memoryForget: (key) => forget(key),
+    memoryRecall: (query, limit) => recall(query, limit),
+    memoryConsolidate: () => consolidate(),
+    memoryReflect: () => reflect(),
+    memoryCount: () => count(),
     memorySearch: (query, limit) => search(query, limit),
     memoryList: (limit) => list(limit),
     memoryClear: () => clear(),

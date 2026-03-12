@@ -65,6 +65,70 @@ export async function runMemoryList(deps: CliDeps): Promise<void> {
   writeLine(deps.stdout, formatMemoryEntries(await deps.memoryList(20)));
 }
 
+export async function runMemoryMemorize(
+  key: string,
+  essence: string,
+  options: { tags?: string; details?: string; importance?: string },
+  deps: CliDeps,
+): Promise<void> {
+  const importance = options.importance === undefined
+    ? undefined
+    : Number(options.importance);
+  const entry = await deps.memoryMemorize(key, essence, {
+    tags: options.tags ? splitCommaList(options.tags) : [],
+    details: options.details,
+    importance: Number.isFinite(importance) ? importance : undefined,
+  });
+  writeLine(deps.stdout, formatMemoryEntries([entry]));
+}
+
+export async function runMemoryGet(key: string, deps: CliDeps): Promise<void> {
+  const entry = await deps.memoryGet(key);
+  if (!entry) {
+    writeLine(deps.stdout, `Memory not found: ${key}`);
+    return;
+  }
+  writeLine(deps.stdout, formatMemoryEntries([entry]));
+}
+
+export async function runMemoryUpdate(
+  key: string,
+  options: { essence?: string; tags?: string; details?: string; importance?: string },
+  deps: CliDeps,
+): Promise<void> {
+  const importance = options.importance === undefined
+    ? undefined
+    : Number(options.importance);
+  const entry = await deps.memoryUpdate(key, {
+    essence: options.essence,
+    tags: options.tags ? splitCommaList(options.tags) : undefined,
+    details: options.details,
+    importance: Number.isFinite(importance) ? importance : undefined,
+  });
+  if (!entry) {
+    writeLine(deps.stdout, `Memory not found: ${key}`);
+    return;
+  }
+  writeLine(deps.stdout, formatMemoryEntries([entry]));
+}
+
+export async function runMemoryForget(key: string, deps: CliDeps): Promise<void> {
+  const removed = await deps.memoryForget(key);
+  writeLine(deps.stdout, removed ? `Forgot memory: ${key}` : `Memory not found: ${key}`);
+}
+
+export async function runMemoryRecall(query: string, limit: number, deps: CliDeps): Promise<void> {
+  writeLine(deps.stdout, formatMemoryEntries(await deps.memoryRecall(query, limit)));
+}
+
+export async function runMemoryConsolidate(deps: CliDeps): Promise<void> {
+  writeLine(deps.stdout, JSON.stringify(await deps.memoryConsolidate(), null, 2));
+}
+
+export async function runMemoryReflect(deps: CliDeps): Promise<void> {
+  writeLine(deps.stdout, await deps.memoryReflect());
+}
+
 export async function runMemoryClear(deps: CliDeps): Promise<void> {
   if (!(await deps.confirm("Clear all va-claw memory entries?"))) {
     writeLine(deps.stdout, "Memory clear aborted.");
@@ -182,4 +246,11 @@ async function loadDiscordChannelModule(): Promise<{
     }): Promise<{ stop(): Promise<void> }>;
     stopDiscordChannel(channel: { stop(): Promise<void> }): Promise<void>;
   }>;
+}
+
+function splitCommaList(value: string): string[] {
+  return value
+    .split(",")
+    .map((part) => part.trim())
+    .filter((part) => part.length > 0);
 }

@@ -7,10 +7,24 @@ export function formatMemoryEntries(entries: MemoryEntry[]): string {
   }
   return entries
     .map((entry, index) => {
-      const lines = [`${index + 1}. ${entry.text}`, `   id: ${entry.id}`, `   created: ${entry.createdAt}`];
+      const lines = [
+        `${index + 1}. ${entry.text}`,
+        `   id: ${entry.id}`,
+        `   key: ${entry.key}`,
+        `   created: ${entry.createdAt}`,
+        `   updated: ${entry.updatedAt}`,
+        `   tags: ${entry.tags.join(", ") || "(none)"}`,
+      ];
       if (entry.metadata) {
         lines.push(`   metadata: ${JSON.stringify(entry.metadata)}`);
       }
+      if (entry.details) {
+        lines.push(`   details: ${entry.details}`);
+      }
+      if (entry.triggerConditions.length > 0) {
+        lines.push(`   trigger_conditions: ${entry.triggerConditions.join(", ")}`);
+      }
+      lines.push(`   importance: ${entry.importance}`, `   strength: ${entry.strength}`, `   access_count: ${entry.accessCount}`);
       return lines.join("\n");
     })
     .join("\n\n");

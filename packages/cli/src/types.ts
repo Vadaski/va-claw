@@ -56,6 +56,32 @@ export type CliDeps = {
   stopDaemon: () => Promise<void>;
   getDaemonStatus: () => Promise<DaemonStatus>;
   memorySearch: (query: string, limit: number) => Promise<MemoryEntry[]>;
+  memoryMemorize: (key: string, essence: string, options: {
+    tags?: string[];
+    details?: string;
+    importance?: number;
+  }) => Promise<MemoryEntry>;
+  memoryGet: (key: string) => Promise<MemoryEntry | undefined>;
+  memoryUpdate: (
+    key: string,
+    changes: {
+      essence?: string;
+      tags?: string[];
+      details?: string;
+      triggerConditions?: string[];
+      importance?: number;
+    },
+  ) => Promise<MemoryEntry | undefined>;
+  memoryForget: (key: string) => Promise<boolean>;
+  memoryRecall: (query: string, limit: number) => Promise<MemoryEntry[]>;
+  memoryConsolidate: () => Promise<{
+    forgotten: number;
+    strengthened: number;
+    total: number;
+    potentialDuplicates: [string, string][];
+  }>;
+  memoryReflect: () => Promise<string>;
+  memoryCount: () => Promise<number>;
   memoryList: (limit: number) => Promise<MemoryEntry[]>;
   memoryClear: () => Promise<void>;
   startTelegramChannel: (config: StartTelegramChannelConfig) => Promise<TelegramChannel>;

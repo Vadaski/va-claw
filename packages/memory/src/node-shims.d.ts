@@ -27,7 +27,8 @@ declare module "node:path" {
 declare module "node:sqlite" {
   export class StatementSync {
     all<T = Record<string, unknown>>(...parameters: unknown[]): T[];
-    run(...parameters: unknown[]): void;
+    get<T = Record<string, unknown>>(...parameters: unknown[]): T | undefined;
+    run(...parameters: unknown[]): { changes: number };
   }
 
   export class DatabaseSync {
