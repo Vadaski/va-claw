@@ -23,7 +23,7 @@
     "url": "https://github.com/Vadaski/va-claw/issues"
   },
   "bin": {
-    "va-claw": "./packages/cli/dist/bin/va-claw.mjs"
+    "va-claw": "./bin/va-claw.mjs"
   },
   "engines": {
     "node": ">=22"

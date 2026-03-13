@@ -1,0 +1,37 @@
+# Development / build tools — don't ship to npm consumers
+vendor/typescript/
+vendor/typescript
+
+# npm cache (must not be published)
+.npm-cache/
+.npm-cache
+
+# Source TypeScript files (consumers use compiled dist/)
+packages/*/src/
+packages/channels/*/src/
+
+# Test files
+packages/*/dist/*.test.js
+packages/*/dist/*.test.js.map
+packages/*/dist/*.test.d.ts
+packages/*/dist/*.test.d.ts.map
+
+# Config files not needed at runtime
+packages/*/tsconfig.json
+tsconfig.json
+pnpm-workspace.yaml
+pnpm-lock.yaml
+biome.json
+
+# CI / GitHub
+.github/
+
+# Scripts (smoke tests, dev helpers)
+scripts/
+
+# va-auto-pilot artifacts (must never ship)
+.va-auto-pilot/
+sprint-state.json
+run-journal.md
+board/
+docs/todo/
