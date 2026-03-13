@@ -17,13 +17,13 @@
   "homepage": "https://vadaski.github.io/va-claw",
   "repository": {
     "type": "git",
-    "url": "https://github.com/Vadaski/va-claw.git"
+    "url": "git+https://github.com/Vadaski/va-claw.git"
   },
   "bugs": {
     "url": "https://github.com/Vadaski/va-claw/issues"
   },
   "bin": {
-    "va-claw": "./bin/va-claw.mjs"
+    "va-claw": "bin/va-claw"
   },
   "engines": {
     "node": ">=22"
