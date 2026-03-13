@@ -107,6 +107,55 @@ va-claw memory recall "what was I working on"
 va-claw status
 ```
 
+### Tutorial use cases
+
+1. 用自然语言快速查看集群状态
+
+```bash
+# 用户说: "我的 va/claw 现在都在干什么？"
+va-claw protocol --text
+```
+
+输出会是一份“fleet 快照”（daemon 状态、内存状态、所有 claw 名单与状态）。
+
+2. 创建并追踪一个长期任务 claw
+
+```bash
+va-claw claw add review-claw \
+  --goal "Review PRs and summarize risks" \
+  --status "running" \
+  --tags "review,automation"
+va-claw claw list
+```
+
+输出应包含 `review-claw` 的 goal/status/tags，表示该任务已注册。
+
+3. 在运行中更新 claw
+
+```bash
+va-claw claw set review-claw --status working --note "Investigating auth module"
+va-claw claw heartbeat review-claw
+```
+
+用于表达“正在处理”“最新活跃时间”信息。
+
+4. 从 CLI 快速看一眼 fleet
+
+```bash
+va-claw claw status
+```
+
+快速拿到 claw 列表与运行态摘要（daemon 与 service 状态也会附带）。
+
+5. 下线过期 claw 并清理
+
+```bash
+va-claw claw remove review-claw
+va-claw protocol --text
+```
+
+确认该 claw 已消失并验证 fleet 已更新。
+
 ---
 
 ## How It Works
