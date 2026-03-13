@@ -34,6 +34,8 @@ export function toCodexSystemPrompt(config: VaClawConfig): string {
     "Wake prompt:",
     normalized.wakePrompt,
     "",
+    `Wake timeout (ms): ${normalized.wakeTimeoutMs ?? 300000}`,
+    "",
     `Loop interval: ${normalized.loopInterval}`,
   ].join("\n");
 }

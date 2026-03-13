@@ -1,9 +1,27 @@
 declare module "node:assert/strict" {
   export function deepEqual(actual: unknown, expected: unknown, message?: string): void;
   export function equal(actual: unknown, expected: unknown, message?: string): void;
+  export function notEqual(actual: unknown, expected: unknown, message?: string): void;
 }
 
 declare module "node:child_process" {
+  export function spawn(
+    command: string,
+    args?: readonly string[],
+    options?: {
+      cwd?: string;
+      env?: Record<string, string | undefined>;
+      stdio?: ["ignore", "pipe", "pipe"];
+    },
+  ): {
+    kill(signal?: string): void;
+    on(event: "close", listener: (code: number | null) => void): void;
+    on(event: "error", listener: (error: Error) => void): void;
+    once(event: "close", listener: (code: number | null) => void): void;
+    stderr: { on(event: "data", listener: (chunk: string | Uint8Array) => void): void };
+    stdout: { on(event: "data", listener: (chunk: string | Uint8Array) => void): void };
+  };
+
   export type SpawnSyncReturns<T> = {
     error?: Error;
     output: Array<T | null>;
@@ -28,6 +46,11 @@ declare module "node:child_process" {
 }
 
 declare module "node:fs/promises" {
+  export function appendFile(
+    path: string,
+    data: string,
+    encoding: "utf8",
+  ): Promise<void>;
   export function mkdir(
     path: string,
     options?: { recursive?: boolean },
@@ -72,7 +95,11 @@ declare namespace NodeJS {
 
 declare const process: {
   cwd(): string;
+  env?: Record<string, string | undefined>;
   execPath: string;
   exit(code?: number): never;
   on(event: NodeJS.Signals, listener: () => void): void;
 };
+
+declare function clearTimeout(timeout: unknown): void;
+declare function setTimeout(handler: () => void, timeout: number): unknown;

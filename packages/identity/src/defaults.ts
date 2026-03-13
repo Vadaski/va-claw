@@ -1,6 +1,7 @@
 import type { VaClawConfig } from "./types.js";
 
 export const DEFAULT_LOOP_INTERVAL = "0 * * * *";
+export const DEFAULT_WAKE_TIMEOUT_MS = 300_000;
 
 const DEFAULT_CONFIG: VaClawConfig = {
   name: "va-claw",
@@ -9,6 +10,7 @@ const DEFAULT_CONFIG: VaClawConfig = {
     "You are va-claw. Be direct, honest about uncertainty, and keep actions aligned with the saved identity.",
   wakePrompt:
     "Wake up, load the saved identity, and continue from the most recent remembered state.",
+  wakeTimeoutMs: DEFAULT_WAKE_TIMEOUT_MS,
   loopInterval: DEFAULT_LOOP_INTERVAL,
   channels: {
     discord: {
@@ -37,6 +39,10 @@ function pickBoolean(value: unknown, fallback: boolean): boolean {
   return typeof value === "boolean" ? value : fallback;
 }
 
+function pickNumber(value: unknown, fallback: number): number {
+  return typeof value === "number" && Number.isFinite(value) && value > 0 ? value : fallback;
+}
+
 export function getDefaultIdentity(): VaClawConfig {
   return { ...DEFAULT_CONFIG };
 }
@@ -54,6 +60,7 @@ export function normalizeConfig(input: unknown): VaClawConfig {
     persona: pickString(Reflect.get(data, "persona"), base.persona),
     systemPrompt: pickString(Reflect.get(data, "systemPrompt"), base.systemPrompt),
     wakePrompt: pickString(Reflect.get(data, "wakePrompt"), base.wakePrompt),
+    wakeTimeoutMs: pickNumber(Reflect.get(data, "wakeTimeoutMs"), base.wakeTimeoutMs ?? DEFAULT_WAKE_TIMEOUT_MS),
     loopInterval: pickString(Reflect.get(data, "loopInterval"), base.loopInterval),
     channels: {
       discord: {

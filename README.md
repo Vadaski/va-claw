@@ -198,6 +198,19 @@ Config lives at `~/.va-claw/config.json`:
 }
 ```
 
+**Realistic `wakePrompt` example for a developer agent:**
+
+```json
+{
+  "name": "Nova",
+  "persona": "Precise and calm. Senior engineer mindset.",
+  "systemPrompt": "Act with continuity. Check memory before starting.",
+  "wakePrompt": "Open the current repository and do a quick operator health pass: inspect git status, note any uncommitted changes, check the most recent CI/test signals, identify the highest-risk file touched recently, and leave a short summary with the next concrete action if attention is needed.",
+  "wakeTimeoutMs": 300000,
+  "loopInterval": "0 * * * *"
+}
+```
+
 ### ⏰ Wake Loop
 
 A local cron daemon that wakes your agent on a schedule and writes the output back into memory.
@@ -209,6 +222,28 @@ va-claw status     # check health + last wake time
 ```
 
 Use cases: daily standup summaries, repo health checks, automated PR reviews, background research.
+
+## Long-running considerations
+
+If you plan to keep `va-claw` running for weeks or months, treat the wake loop like an always-on operator process: budget tokens, watch local disk growth, and rotate logs before they become noise.
+
+**Token budget estimation:** a simple planning formula is `wakes per day × average tokens per wake`. Hourly wakes are `24/day`; every 15 minutes is `96/day`. If your prompt + tool output averages 1.5k tokens, an hourly loop is roughly `36k tokens/day` and a 15-minute loop is roughly `144k tokens/day`. Start with a conservative interval, then tighten it only when the wake output is consistently actionable.
+
+**`memory.db` growth:** the SQLite store at `~/.va-claw/memory.db` grows with every saved wake. For short repo-health summaries, expect roughly low single-digit KB per wake; for verbose research or review loops it can climb much faster. A practical habit is to check size monthly with `du -h ~/.va-claw/memory.db`, run `va-claw memory consolidate` on a cadence, and avoid wake prompts that dump full diffs or long logs unless you actually need them remembered.
+
+**`wake.log` rotation:** each wake also appends one JSON line to `~/.va-claw/wake.log`, including timestamp, duration, exit code, and the last 2 KB of combined output. Create the file on first run, then rotate it with your OS tooling before it grows indefinitely. A minimal `logrotate` example on Linux:
+
+```conf
+/home/you/.va-claw/wake.log {
+  size 1M
+  rotate 7
+  copytruncate
+  missingok
+  notifempty
+}
+```
+
+On macOS, the equivalent is usually a small `newsyslog.conf` rule or a periodic `mv ~/.va-claw/wake.log ~/.va-claw/wake.log.$(date +%F)` job. The important part is simple: keep a few recent log files, drop the oldest ones, and never let wake diagnostics grow without bound.
 
 ---
 

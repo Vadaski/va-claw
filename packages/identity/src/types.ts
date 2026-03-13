@@ -27,6 +27,7 @@ export type VaClawConfig = {
   persona: string;
   systemPrompt: string;
   wakePrompt: string;
+  wakeTimeoutMs?: number;
   loopInterval: string;
   channels: ChannelConfig;
 };
