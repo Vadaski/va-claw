@@ -1,5 +1,13 @@
 declare module "node:assert/strict" {
+  export function strictEqual<T>(actual: T, expected: T, message?: string): void;
   export function ok(value: unknown, message?: string): asserts value;
+
+  declare const assert: {
+    ok: typeof ok;
+    strictEqual: typeof strictEqual;
+  };
+
+  export default assert;
 }
 
 declare module "node:child_process" {

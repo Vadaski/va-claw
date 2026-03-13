@@ -8,6 +8,7 @@ import {
 } from "./output.js";
 import { detectServiceType, probeServiceRunning, stopInstalledService } from "./platform.js";
 import {
+  type ClawDefinition,
   listClaws,
   registerClaw,
   removeClaw,
@@ -214,17 +215,7 @@ async function buildProtocolReport(deps: CliDeps): Promise<{
     entries: number;
     lastWakeAt: string | null;
   };
-  claws: {
-    name: string;
-    goal: string;
-    status: string;
-    cliCommand: string;
-    note: string;
-    tags: string[];
-    lastSeenAt?: string;
-    createdAt: string;
-    updatedAt: string;
-  }[];
+  claws: ClawDefinition[];
 }> {
   const runtime = await deps.getDaemonStatus();
   const serviceType = safeDetectServiceType(deps.platform);
