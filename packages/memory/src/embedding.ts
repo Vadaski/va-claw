@@ -1,21 +1,47 @@
+import { homedir } from "node:os";
+import { join } from "node:path";
 import type { MemoryMetadata } from "./types.js";
 
-const EMBEDDING_DIMENSIONS = 32;
+declare const process: {
+  env: Record<string, string | undefined>;
+};
+
+const EMBEDDING_DIMENSIONS = 384;
+const EMBEDDING_MODEL = "Xenova/paraphrase-multilingual-MiniLM-L12-v2";
+const EMBEDDING_CACHE_DIR = join(homedir(), ".va-claw", "models");
+
+type EmbeddingTensor = {
+  data: ArrayLike<number>;
+};
+
+type EmbeddingExtractor = (
+  input: string,
+  options: { pooling: "mean"; normalize: true },
+) => Promise<EmbeddingTensor>;
+
+let embeddingExtractorPromise: Promise<EmbeddingExtractor> | undefined;
+let embeddingExtractorOverride: EmbeddingExtractor | undefined;
 
 export function buildSearchText(text: string, metadata: MemoryMetadata): string {
   const metadataText = metadata ? flattenMetadata(metadata).join(" ") : "";
   return `${text} ${metadataText}`.trim().toLowerCase();
 }
 
-export function createEmbedding(input: string): number[] {
-  const vector = Array.from({ length: EMBEDDING_DIMENSIONS }, () => 0);
-  for (const token of tokenize(input)) {
-    const hash = hashToken(token);
-    const index = Math.abs(hash) % EMBEDDING_DIMENSIONS;
-    vector[index] += hash < 0 ? -1 : 1;
+export async function createEmbedding(input: string): Promise<number[]> {
+  const normalizedInput = input.trim();
+  if (!normalizedInput) {
+    return Array.from({ length: EMBEDDING_DIMENSIONS }, () => 0);
   }
-  const magnitude = Math.hypot(...vector) || 1;
-  return vector.map((value) => value / magnitude);
+
+  const extractor = await getEmbeddingExtractor();
+  const tensor = await extractor(normalizedInput, { pooling: "mean", normalize: true });
+  const vector = Array.from(tensor.data);
+  if (vector.length !== EMBEDDING_DIMENSIONS) {
+    throw new Error(
+      `Expected ${EMBEDDING_DIMENSIONS}-dim embedding from ${EMBEDDING_MODEL}, received ${vector.length}.`,
+    );
+  }
+  return vector;
 }
 
 export function cosineSimilarity(left: number[], right: number[]): number {
@@ -54,11 +80,35 @@ function flattenMetadata(value: unknown): string[] {
   return [];
 }
 
-function hashToken(token: string): number {
-  let hash = 2166136261;
-  for (let index = 0; index < token.length; index += 1) {
-    hash ^= token.charCodeAt(index);
-    hash = Math.imul(hash, 16777619);
+async function getEmbeddingExtractor(): Promise<EmbeddingExtractor> {
+  if (embeddingExtractorOverride) {
+    return embeddingExtractorOverride;
   }
-  return hash | 0;
+  if (!embeddingExtractorPromise) {
+    embeddingExtractorPromise = loadEmbeddingExtractor().catch((error: unknown) => {
+      embeddingExtractorPromise = undefined;
+      throw error;
+    });
+  }
+  return embeddingExtractorPromise;
+}
+
+async function loadEmbeddingExtractor(): Promise<EmbeddingExtractor> {
+  const transformers = await import("@huggingface/transformers");
+  process.env.HF_HOME ??= EMBEDDING_CACHE_DIR;
+  process.env.TRANSFORMERS_CACHE ??= EMBEDDING_CACHE_DIR;
+  transformers.env.cacheDir = EMBEDDING_CACHE_DIR;
+
+  const extractor = await transformers.pipeline("feature-extraction", EMBEDDING_MODEL);
+  return extractor as EmbeddingExtractor;
+}
+
+export function __setEmbeddingExtractorForTests(extractor?: EmbeddingExtractor): void {
+  embeddingExtractorOverride = extractor;
+  embeddingExtractorPromise = undefined;
+}
+
+export function __resetEmbeddingModelForTests(): void {
+  embeddingExtractorOverride = undefined;
+  embeddingExtractorPromise = undefined;
 }

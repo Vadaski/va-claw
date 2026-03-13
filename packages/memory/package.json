@@ -9,6 +9,9 @@
     "build": "tsc -b",
     "test": "pnpm run build && node --test dist/memory-store.test.js"
   },
+  "dependencies": {
+    "@huggingface/transformers": "latest"
+  },
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",

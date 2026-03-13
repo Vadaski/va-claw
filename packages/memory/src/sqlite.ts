@@ -148,7 +148,7 @@ export class SqliteMemoryDb {
          FROM memories
          WHERE "key" = ?`,
       )
-      .get<StoredMemoryRow>(key);
+      .get(key) as StoredMemoryRow | undefined;
   }
 
   deleteByKey(key: string): boolean {
@@ -163,7 +163,7 @@ export class SqliteMemoryDb {
          FROM memories
          ORDER BY created_at DESC, id DESC`,
       )
-      .all<StoredMemoryRow>();
+      .all() as StoredMemoryRow[];
   }
 
   list(limit: number): StoredMemoryRow[] {
@@ -174,7 +174,7 @@ export class SqliteMemoryDb {
          ORDER BY created_at DESC, id DESC
          LIMIT ?`,
       )
-      .all<StoredMemoryRow>(limit);
+      .all(limit) as StoredMemoryRow[];
   }
 
   listWithEmbeddings(): StoredMemoryRow[] {
@@ -184,7 +184,7 @@ export class SqliteMemoryDb {
          FROM memories
          WHERE embedding IS NOT NULL`,
       )
-      .all<StoredMemoryRow>();
+      .all() as StoredMemoryRow[];
   }
 
   searchByKeywords(query: string, topK: number): StoredMemoryRow[] {
@@ -201,7 +201,7 @@ export class SqliteMemoryDb {
          WHERE ${predicates}
          ORDER BY created_at DESC`,
       )
-      .all<StoredMemoryRow>(...params);
+      .all(...params) as StoredMemoryRow[];
     return rows
       .map((row) => ({ ...row, score: scoreKeywordMatch(row.search_text, tokens) }))
       .sort(compareRankedRows)

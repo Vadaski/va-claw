@@ -43,13 +43,16 @@ type RecallCandidate = {
   entry: MemoryEntry;
   keywordScore: number;
   retention: number;
+  finalScore: number;
 };
 
 export class MemoryStore {
   private readonly db: SqliteMemoryDb;
+  private readonly embeddingEnabled: boolean;
 
   constructor(options: MemoryStoreOptions = {}) {
     this.db = new SqliteMemoryDb(options);
+    this.embeddingEnabled = this.db.vectorAvailable;
   }
 
   async memorize(
@@ -87,7 +90,7 @@ export class MemoryStore {
       metadata: existingEntry?.metadata ? JSON.stringify(existingEntry.metadata) : null,
       created_at: existingEntry?.createdAt ?? now,
       search_text: searchText,
-      embedding: this.db.vectorAvailable ? JSON.stringify(createEmbedding(searchText)) : null,
+      embedding: await this.createStoredEmbedding(searchText),
       key,
       tags: JSON.stringify(tags),
       trigger_conditions: JSON.stringify(triggerConditions),
@@ -133,7 +136,10 @@ export class MemoryStore {
       trigger_conditions: JSON.stringify(normalizeStringArray(nextTriggerConditions)),
       importance: nextImportance,
       search_text: searchText,
-      embedding: this.db.vectorAvailable ? JSON.stringify(createEmbedding(searchText)) : row.embedding,
+      embedding: await this.createStoredEmbedding(
+        searchText,
+        searchText === row.search_text ? row.embedding : null,
+      ),
       updated_at: nowString(),
     };
     this.db.upsertByKey(updated);
@@ -147,35 +153,36 @@ export class MemoryStore {
   async recall(query: string, limit = 5): Promise<MemoryEntry[]> {
     const safeLimit = Number.isFinite(limit) ? Math.max(0, Math.floor(limit)) : 5;
     const tokens = keywordTokens(query);
-    if (tokens.length === 0) {
+    const queryEmbedding = await this.loadQueryEmbedding(query);
+    if (tokens.length === 0 && !queryEmbedding) {
       return [];
     }
     const now = nowString();
-    const candidates = this.db.listAll().map((row) => toMemoryEntry(row));
-    const scored = candidates
-      .map((entry) => {
-        const keywordScore = computeKeywordScore(entry, tokens);
-        if (keywordScore <= 0) {
-          return undefined;
-        }
-        const retention = computeRetention(
-          entry.strength,
-          entry.lastAccessedAt ?? entry.updatedAt,
-          entry.decayTau,
-          entry.importance,
-          entry.accessCount,
-        );
-        return {
-          entry,
-          keywordScore,
-          retention,
-        };
-      })
+    const scoredRows = this.db.listAll().map((row) => {
+      const entry = toMemoryEntry(row);
+      const keywordScore = computeKeywordScore(entry, tokens);
+      const embeddingScore =
+        queryEmbedding && row.embedding ? cosineSimilarity(queryEmbedding, parseEmbedding(row.embedding)) : 0;
+      const relevanceScore = keywordScore > 0 ? keywordScore : embeddingScore;
+      if (relevanceScore <= 0) {
+        return undefined;
+      }
+      const retention = computeRetention(
+        entry.strength,
+        entry.lastAccessedAt ?? entry.updatedAt,
+        entry.decayTau,
+        entry.importance,
+        entry.accessCount,
+      );
+      return {
+        entry,
+        keywordScore,
+        retention,
+        finalScore: relevanceScore * 0.7 + retention * 0.3,
+      };
+    });
+    const scored = scoredRows
       .filter((candidate): candidate is RecallCandidate => candidate !== undefined)
-      .map((candidate) => {
-        const finalScore = candidate.keywordScore * 0.7 + candidate.retention * 0.3;
-        return { ...candidate, finalScore };
-      })
       .sort((left, right) => right.finalScore - left.finalScore || right.retention - left.retention);
 
     const results: MemoryEntry[] = [];
@@ -266,7 +273,7 @@ export class MemoryStore {
           last_accessed_at: nowIso,
           updated_at: nowIso,
           search_text: searchText,
-          embedding: this.db.vectorAvailable ? JSON.stringify(createEmbedding(searchText)) : row.embedding,
+          embedding: await this.createStoredEmbedding(searchText, row.embedding),
         };
         this.db.upsertByKey(updated);
         survivors.push(toMemoryEntry(updated));
@@ -317,11 +324,22 @@ export class MemoryStore {
     if (safeTopK <= 0) {
       return [];
     }
-    if (this.db.vectorAvailable) {
-      const queryEmbedding = createEmbedding(query);
+    if (query.trim().length === 0) {
+      return this.db.searchByKeywords(query, safeTopK).map((row) => toMemoryEntry(row));
+    }
+
+    const queryEmbedding = await this.loadQueryEmbedding(query);
+    if (queryEmbedding) {
+      const tokens = keywordTokens(query);
       return this.db
-        .listWithEmbeddings()
-        .map((row) => ({ row, score: cosineSimilarity(queryEmbedding, parseEmbedding(row.embedding)) }))
+        .listAll()
+        .map((row) => {
+          const score = row.embedding
+            ? cosineSimilarity(queryEmbedding, parseEmbedding(row.embedding))
+            : computeKeywordScore(toMemoryEntry(row), tokens);
+          return { row, score };
+        })
+        .filter(({ score }) => score > 0)
         .sort((left, right) => right.score - left.score || compareRows(left.row, right.row))
         .slice(0, safeTopK)
         .map(({ row }) => toMemoryEntry(row));
@@ -354,7 +372,7 @@ export class MemoryStore {
           ...row,
           metadata: serializedMetadata,
           search_text: searchText,
-          embedding: this.db.vectorAvailable ? JSON.stringify(createEmbedding(searchText)) : row.embedding,
+          embedding: await this.createStoredEmbedding(searchText, row.embedding),
         });
       }
     }
@@ -367,6 +385,23 @@ export class MemoryStore {
 
   close(): void {
     this.db.close();
+  }
+
+  private async createStoredEmbedding(
+    searchText: string,
+    fallback: string | null = null,
+  ): Promise<string | null> {
+    if (!this.embeddingEnabled) {
+      return null;
+    }
+    return createStoredEmbedding(searchText, fallback);
+  }
+
+  private async loadQueryEmbedding(query: string): Promise<number[] | null> {
+    if (!this.embeddingEnabled) {
+      return null;
+    }
+    return loadQueryEmbedding(query);
   }
 }
 
@@ -426,6 +461,22 @@ function parseEmbedding(embedding: string | null): number[] {
   }
   const value = JSON.parse(embedding) as unknown;
   return Array.isArray(value) ? value.filter((item): item is number => typeof item === "number") : [];
+}
+
+async function createStoredEmbedding(searchText: string, fallback: string | null = null): Promise<string | null> {
+  try {
+    return JSON.stringify(await createEmbedding(searchText));
+  } catch {
+    return fallback;
+  }
+}
+
+async function loadQueryEmbedding(query: string): Promise<number[] | null> {
+  try {
+    return await createEmbedding(query);
+  } catch {
+    return null;
+  }
 }
 
 function parseMetadata(metadata: string | null): MemoryMetadata {

@@ -1,7 +1,12 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { MemoryStore } from "./memory-store.js";
+import { __setEmbeddingExtractorForTests } from "./embedding.js";
 import { computeRetention, reinforceOnAccess } from "./forgetting-curve.js";
+
+__setEmbeddingExtractorForTests(async (input) => ({
+  data: createTestEmbedding(input),
+}));
 
 test("store then list returns the stored id", async () => {
   const store = new MemoryStore({ dbPath: ":memory:" });
@@ -15,13 +20,73 @@ test("store then list returns the stored id", async () => {
   store.close();
 });
 
-test("search hits keyword matches when vector search is unavailable", async () => {
+test("search ranks the relevant launch memory first", async () => {
   const store = new MemoryStore({ dbPath: ":memory:" });
   await store.store("alpha project notes");
   await store.store("beta launch checklist");
   const entries = await store.search("launch", 5);
-  assert.equal(entries.length, 1);
+  assert.equal(entries.length >= 1, true);
   assert.equal(entries[0]?.text.includes("launch"), true);
+  store.close();
+});
+
+test("search still finds legacy rows without embeddings after upgrade", async () => {
+  const store = new MemoryStore({ dbPath: ":memory:" });
+  await store.memorize("legacy-launch", "launch retrospective from the old system");
+  await store.store("completely unrelated note");
+
+  const db = store as unknown as {
+    db: {
+      getByKey: (key: string) => {
+        id: string;
+        text: string;
+        essence: string;
+        details: string | null;
+        tags: string | null;
+        trigger_conditions: string | null;
+        importance: number;
+        strength: number;
+        decay_tau: number;
+        last_accessed_at: string | null;
+        access_count: number;
+        metadata: string | null;
+        created_at: string;
+        updated_at: string;
+        search_text: string;
+        embedding: string | null;
+        key: string;
+      };
+      upsertByKey: (row: {
+        id: string;
+        text: string;
+        essence: string;
+        details: string | null;
+        tags: string | null;
+        trigger_conditions: string | null;
+        importance: number;
+        strength: number;
+        decay_tau: number;
+        last_accessed_at: string | null;
+        access_count: number;
+        metadata: string | null;
+        created_at: string;
+        updated_at: string;
+        search_text: string;
+        embedding: string | null;
+        key: string;
+      }) => void;
+    };
+  };
+
+  const legacyRow = db.db.getByKey("legacy-launch");
+  assert.ok(legacyRow);
+  db.db.upsertByKey({
+    ...legacyRow,
+    embedding: null,
+  });
+
+  const entries = await store.search("launch", 5);
+  assert.equal(entries.some((entry) => entry.key === "legacy-launch"), true);
   store.close();
 });
 
@@ -315,3 +380,50 @@ test("search with special characters in query", async () => {
   assert.equal(Array.isArray(entries), true);
   store.close();
 });
+
+test("recall supports cross-language semantic matches", async () => {
+  const store = new MemoryStore({ dbPath: ":memory:" });
+  await store.memorize("kimi-fix", "Resolved the Kimi 400 error in the CLI login flow", {
+    tags: ["support"],
+    details: "Fix involved clearing stale session state before retrying authentication.",
+  });
+  await store.memorize("other-note", "Calendar sync completed successfully", {
+    tags: ["ops"],
+    details: "No authentication issues remained after rollout.",
+  });
+
+  const entries = await store.recall("kimi 오류", 5);
+  assert.equal(entries[0]?.key, "kimi-fix");
+  store.close();
+});
+
+function createTestEmbedding(input: string): number[] {
+  const dimensions = 384;
+  const vector = Array.from({ length: dimensions }, () => 0);
+  for (const token of tokenizeForTest(input)) {
+    const index = Math.abs(hashToken(token)) % dimensions;
+    vector[index] += 1;
+  }
+  const magnitude = Math.hypot(...vector) || 1;
+  return vector.map((value) => value / magnitude);
+}
+
+function tokenizeForTest(input: string): string[] {
+  const aliasMap = new Map<string, string>([
+    ["오류", "error"],
+    ["错误", "error"],
+    ["錯誤", "error"],
+    ["故障", "error"],
+  ]);
+
+  return (input.toLowerCase().match(/[\p{L}\p{N}]+/gu) ?? []).map((token) => aliasMap.get(token) ?? token);
+}
+
+function hashToken(token: string): number {
+  let hash = 2166136261;
+  for (let index = 0; index < token.length; index += 1) {
+    hash ^= token.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+  return hash | 0;
+}
