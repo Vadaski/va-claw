@@ -38,6 +38,9 @@
     "bundle": "node scripts/bundle.mjs",
     "prepublishOnly": "pnpm run build && node scripts/bundle.mjs"
   },
+  "dependencies": {
+    "@huggingface/transformers": "latest"
+  },
   "devDependencies": {
     "esbuild": "^0.27.3",
     "typescript": "file:vendor/typescript"
