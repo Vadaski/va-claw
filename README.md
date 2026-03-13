@@ -28,72 +28,7 @@
   <a href="#vs-openclaw">vs OpenClaw</a>
 </p>
 
-> Read in [English](#what-is-va-claw) · [中文](#中文使用指南)
-
-## 中文使用指南
-
-va-claw 是一个本地插件，给你的 Claude Code / OpenCode / Codex 增加：
-- 持久化记忆（SQLite）
-- 身份注入（固定 persona、system prompt）
-- 后台唤醒循环（wake-loop）
-- 长期任务/子智能体（claw）状态协议（`protocol` / `claw` 命令）
-
-### 快速开始（中文）
-
-```bash
-npm install -g va-claw
-va-claw install        # 把身份注入到 ~/.claude/CLAUDE.md 或 ~/.codex/instructions.md
-va-claw start          # 启动后台守护进程
-```
-
-### 先决条件（中文）
-
-- **Node.js** >= 22
-- 已安装 Claude Code（`npm install -g @anthropic-ai/claude-code`）或 OpenCode / Codex
-
-### 常用命令（中文）
-
-```bash
-# 安装（含默认内置 claw 管理技能）
-va-claw install
-
-# 检查守护进程与运行状态
-va-claw status
-va-claw protocol --text
-
-# 记忆操作
-va-claw memory list
-va-claw memory recall "上次在干什么"
-
-# claw 运营
-va-claw claw list
-va-claw claw add review-claw --goal "review PR 并输出风险清单" --status idle --tags review,automation
-va-claw claw set review-claw --status running --note "开始处理 PR #123"
-va-claw claw heartbeat review-claw
-va-claw claw remove review-claw
-
-# 频道接入（可选）
-va-claw channel discord setup
-va-claw channel telegram setup --token <bot-token>
-va-claw channel slack setup --bot-token <xoxb-...> --app-token <xapp-...>
-```
-
-### 使用示例（中文）
-
-```bash
-# 1) 直接自然语言查询爬行集群状态（适合对话里提问）
-va-claw protocol --text
-
-# 2) 看当前系统是否运行，和 claw 清单
-va-claw claw status
-va-claw claw list
-
-# 3) 追踪某个 claw 的状态变化
-va-claw claw set review-claw --status working --note "处理中"
-va-claw claw heartbeat review-claw
-```
-
-你可以对着英文章节继续往下看完整文档（所有命令在两种语言中一致）。
+> [中文文档](README.zh-CN.md)
 
 ---
 
@@ -176,16 +111,15 @@ va-claw status
 
 ### Tutorial use cases
 
-1. 用自然语言快速查看集群状态
+**1. Query fleet status in natural language**
 
 ```bash
-# 用户说: "我的 va/claw 现在都在干什么？"
 va-claw protocol --text
 ```
 
-输出会是一份“fleet 快照”（daemon 状态、内存状态、所有 claw 名单与状态）。
+Outputs a fleet snapshot: daemon status, memory state, and the full list of running claws with their current status.
 
-2. 创建并追踪一个长期任务 claw
+**2. Create and track a long-running claw**
 
 ```bash
 va-claw claw add review-claw \
@@ -195,33 +129,33 @@ va-claw claw add review-claw \
 va-claw claw list
 ```
 
-输出应包含 `review-claw` 的 goal/status/tags，表示该任务已注册。
+The output should include `review-claw` with its goal, status, and tags confirming the task is registered.
 
-3. 在运行中更新 claw
+**3. Update a running claw**
 
 ```bash
 va-claw claw set review-claw --status working --note "Investigating auth module"
 va-claw claw heartbeat review-claw
 ```
 
-用于表达“正在处理”“最新活跃时间”信息。
+Use this to record what the claw is actively doing and refresh its last-seen timestamp.
 
-4. 从 CLI 快速看一眼 fleet
+**4. Quick fleet overview from the CLI**
 
 ```bash
 va-claw claw status
 ```
 
-快速拿到 claw 列表与运行态摘要（daemon 与 service 状态也会附带）。
+Returns a summary of all claws with their run states, plus daemon and service health.
 
-5. 下线过期 claw 并清理
+**5. Remove a claw and verify the fleet**
 
 ```bash
 va-claw claw remove review-claw
 va-claw protocol --text
 ```
 
-确认该 claw 已消失并验证 fleet 已更新。
+Confirms the claw is gone and the fleet snapshot reflects the updated state.
 
 ---
 
@@ -270,10 +204,9 @@ va-claw protocol --text
 
 Once installed, you and your agent can query running claw status through natural language:
 
-- "我的 va/claw 们都在干什么？"
 - "What are my claws doing?"
 - "Show my claw fleet"
-- "我的 claw 现在状态"
+- "Give me a fleet snapshot"
 
 This maps to:
 
