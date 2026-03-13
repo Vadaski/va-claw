@@ -1,6 +1,6 @@
 {
   "name": "va-claw",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Persistent memory, identity, and wake-loop daemon for Claude Code & Codex",
   "keywords": [
     "claude-code",
