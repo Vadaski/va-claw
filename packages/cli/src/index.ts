@@ -1,5 +1,8 @@
 export { createDefaultCliDeps } from "./deps.js";
 export {
+  runLarkChannelSetup,
+  runLarkChannelStart,
+  runLarkChannelStatus,
   runSlackChannelSetup,
   runSlackChannelStart,
   runSlackChannelStatus,

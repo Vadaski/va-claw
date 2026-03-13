@@ -33,6 +33,11 @@ const FULL_IDENTITY = {
       appToken: "slack-app-token",
       cliCommand: "codex",
     },
+    lark: {
+      appId: "cli_a123",
+      appSecret: "secret_456",
+      cliCommand: "claude -p",
+    },
   },
 };
 
@@ -58,6 +63,9 @@ test("saveIdentity writes JSON containing all fields", async () => {
   assert.equal(parsed.channels.slack.botToken, FULL_IDENTITY.channels.slack.botToken);
   assert.equal(parsed.channels.slack.appToken, FULL_IDENTITY.channels.slack.appToken);
   assert.equal(parsed.channels.slack.cliCommand, FULL_IDENTITY.channels.slack.cliCommand);
+  assert.equal(parsed.channels.lark.appId, FULL_IDENTITY.channels.lark.appId);
+  assert.equal(parsed.channels.lark.appSecret, FULL_IDENTITY.channels.lark.appSecret);
+  assert.equal(parsed.channels.lark.cliCommand, FULL_IDENTITY.channels.lark.cliCommand);
 
   await rm(dir, { recursive: true, force: true });
 });

@@ -42,6 +42,7 @@
     "@huggingface/transformers": "latest"
   },
   "devDependencies": {
+    "@types/node": "^24.5.2",
     "esbuild": "^0.27.3",
     "typescript": "file:vendor/typescript"
   }

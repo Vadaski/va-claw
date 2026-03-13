@@ -80,6 +80,8 @@ export function createDefaultCliDeps(): CliDeps {
     memoryClear: () => clear(),
     startTelegramChannel: (config) => loadChannelsModule().then((module) => module.startTelegramChannel(config)),
     stopTelegramChannel: (channel) => loadChannelsModule().then((module) => module.stopTelegramChannel(channel)),
+    startLarkChannel: (config) => loadChannelsModule().then((module) => module.startLarkChannel(config)),
+    stopLarkChannel: (channel) => loadChannelsModule().then((module) => module.stopLarkChannel(channel)),
     startSlackChannel: (config) => loadChannelsModule().then((module) => module.startSlackChannel(config)),
     stopSlackChannel: (channel) => loadChannelsModule().then((module) => module.stopSlackChannel(channel)),
     skillInstall: (content, name) => installSkill(content, name),
@@ -114,14 +116,18 @@ async function askForValue(message: string, initialValue = ""): Promise<string> 
 
 async function loadChannelsModule(): Promise<{
   startSlackChannel: CliDeps["startSlackChannel"];
+  startLarkChannel: CliDeps["startLarkChannel"];
   startTelegramChannel: CliDeps["startTelegramChannel"];
+  stopLarkChannel: CliDeps["stopLarkChannel"];
   stopSlackChannel: CliDeps["stopSlackChannel"];
   stopTelegramChannel: CliDeps["stopTelegramChannel"];
 }> {
   const moduleUrl = new URL("../../channels/dist/index.js", import.meta.url);
   return import(moduleUrl.href) as Promise<{
     startSlackChannel: CliDeps["startSlackChannel"];
+    startLarkChannel: CliDeps["startLarkChannel"];
     startTelegramChannel: CliDeps["startTelegramChannel"];
+    stopLarkChannel: CliDeps["stopLarkChannel"];
     stopSlackChannel: CliDeps["stopSlackChannel"];
     stopTelegramChannel: CliDeps["stopTelegramChannel"];
   }>;

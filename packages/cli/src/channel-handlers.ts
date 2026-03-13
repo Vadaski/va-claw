@@ -77,6 +77,44 @@ export async function runSlackChannelStatus(deps: CliDeps): Promise<void> {
   writeLine(deps.stdout, `Slack CLI command: ${config.channels.slack.cliCommand || "va-claw"}`);
 }
 
+export async function runLarkChannelSetup(
+  appId: string | undefined,
+  appSecret: string | undefined,
+  cliCommand: string | undefined,
+  deps: CliDeps,
+): Promise<void> {
+  const config = await deps.loadIdentity();
+  const next = withChannels(config, {
+    lark: {
+      ...config.channels.lark,
+      appId: appId ?? config.channels.lark.appId,
+      appSecret: appSecret ?? config.channels.lark.appSecret,
+      cliCommand: cliCommand ?? config.channels.lark.cliCommand,
+    },
+  });
+  ensureLarkConfigured(next);
+  await deps.saveIdentity(next);
+  writeLine(deps.stdout, `Saved Lark config to ${deps.configPath}`);
+}
+
+export async function runLarkChannelStart(deps: CliDeps): Promise<void> {
+  const config = await deps.loadIdentity();
+  ensureLarkConfigured(config);
+  const channel = await deps.startLarkChannel(config.channels.lark);
+  writeLine(deps.stdout, "Lark channel started in foreground. Press Ctrl+C to stop.");
+  await waitForStopSignal(async () => {
+    await deps.stopLarkChannel(channel);
+    writeLine(deps.stdout, "Lark channel stopped.");
+  });
+}
+
+export async function runLarkChannelStatus(deps: CliDeps): Promise<void> {
+  const config = await deps.loadIdentity();
+  const configured = config.channels.lark.appId !== "" && config.channels.lark.appSecret !== "";
+  writeLine(deps.stdout, `Lark configured: ${configured ? "yes" : "no"}`);
+  writeLine(deps.stdout, `Lark CLI command: ${config.channels.lark.cliCommand || "va-claw"}`);
+}
+
 function ensureTelegramConfigured(config: VaClawConfig): void {
   if (!config.channels.telegram.token) {
     throw new Error("Telegram token is required. Use `va-claw channel telegram setup --token <token>`.");
@@ -87,6 +125,14 @@ function ensureSlackConfigured(config: VaClawConfig): void {
   if (!config.channels.slack.botToken || !config.channels.slack.appToken) {
     throw new Error(
       "Slack bot/app tokens are required. Use `va-claw channel slack setup --bot-token <token> --app-token <token>`.",
+    );
+  }
+}
+
+function ensureLarkConfigured(config: VaClawConfig): void {
+  if (!config.channels.lark.appId || !config.channels.lark.appSecret) {
+    throw new Error(
+      "Lark appId/appSecret are required. Use `va-claw channel lark setup --app-id <id> --app-secret <secret>`.",
     );
   }
 }

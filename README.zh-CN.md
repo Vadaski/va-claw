@@ -376,7 +376,7 @@ When checking the repository, always:
 
 ## 频道接入
 
-将唤醒循环接入 Discord、Telegram 或 Slack，远程接收输出并发送指令。
+将唤醒循环接入 Discord、Telegram、Slack 或飞书（Lark），远程接收输出并发送指令。
 
 ### Discord
 
@@ -399,6 +399,16 @@ va-claw channel telegram start
 va-claw channel slack setup --bot-token <xoxb-...> --app-token <xapp-...>
 va-claw channel slack start
 ```
+
+### 飞书（Lark）
+
+```bash
+va-claw channel lark setup --app-id <cli_a...> --app-secret <secret>
+va-claw channel lark start
+va-claw channel lark status
+```
+
+在飞书开放平台创建自建应用，开启 `im:message` 事件订阅，并授予消息发送/回复权限。
 
 ---
 
@@ -439,6 +449,7 @@ va-claw claw remove <name>
 va-claw channel discord  setup | start | stop | status
 va-claw channel telegram setup --token <t> | start | stop | status
 va-claw channel slack    setup --bot-token <t> --app-token <t> | start | stop | status
+va-claw channel lark     setup --app-id <id> --app-secret <secret> | start | status
 ```
 
 ---
@@ -451,7 +462,7 @@ va-claw channel slack    setup --bot-token <t> --app-token <t> | start | stop | 
 | **安装** | `npm install -g va-claw` | 完整网关安装 |
 | **Agent** | Claude Code、OpenCode、Codex | 自有运行时 |
 | **记忆** | SQLite（本地） | SQLite + Markdown 压缩 |
-| **频道** | Discord、Telegram、Slack | WhatsApp、iMessage 等更多 |
+| **频道** | Discord、Telegram、Slack、飞书 | WhatsApp、iMessage 等更多 |
 | **体积** | ~2 MB，零云端依赖 | 完整服务栈 |
 | **适合** | 已在用 Claude Code / Codex 的开发者 | 想要独立专属 Agent 的用户 |
 

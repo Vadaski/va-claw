@@ -124,6 +124,18 @@ va-claw channel slack start
 
 Create a Slack app at: https://api.slack.com/apps
 
+## Optional: Connect to Lark (Feishu)
+
+To receive wake outputs and send commands via Lark:
+
+```bash
+va-claw channel lark setup --app-id <your-app-id> --app-secret <your-app-secret>
+va-claw channel lark start
+```
+
+Create a self-built app at: https://open.feishu.cn/
+Enable the `im.message.receive_v1` event subscription and message send/reply permissions.
+
 ## Natural-language claw-fleet checks are enabled on install
 
 `va-claw install` will automatically install a built-in skill so you can ask for claw status in natural language (for example, "我的 va/claw 在干什么" or "what are my claws doing").

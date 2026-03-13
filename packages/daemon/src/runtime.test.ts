@@ -32,6 +32,11 @@ const TEST_CONFIG: VaClawConfig = {
       appToken: "",
       cliCommand: "",
     },
+    lark: {
+      appId: "",
+      appSecret: "",
+      cliCommand: "",
+    },
   },
 };
 
@@ -118,6 +123,7 @@ test("startDaemon auto-starts discord when enabled", async () => {
       },
       telegram: TEST_CONFIG.channels.telegram,
       slack: TEST_CONFIG.channels.slack,
+      lark: TEST_CONFIG.channels.lark,
     },
   });
   const status = await getDaemonStatus();

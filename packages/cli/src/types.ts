@@ -1,4 +1,6 @@
 import type {
+  LarkChannel,
+  StartLarkChannelConfig,
   SlackChannel,
   StartSlackChannelConfig,
   StartTelegramChannelConfig,
@@ -87,6 +89,8 @@ export type CliDeps = {
   memoryClear: () => Promise<void>;
   startTelegramChannel: (config: StartTelegramChannelConfig) => Promise<TelegramChannel>;
   stopTelegramChannel: (channel: TelegramChannel) => Promise<void>;
+  startLarkChannel: (config: StartLarkChannelConfig) => Promise<LarkChannel>;
+  stopLarkChannel: (channel: LarkChannel) => Promise<void>;
   startSlackChannel: (config: StartSlackChannelConfig) => Promise<SlackChannel>;
   stopSlackChannel: (channel: SlackChannel) => Promise<void>;
   skillInstall: (content: string, name: string) => Promise<string>;

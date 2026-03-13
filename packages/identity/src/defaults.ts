@@ -28,6 +28,11 @@ const DEFAULT_CONFIG: VaClawConfig = {
       appToken: "",
       cliCommand: "",
     },
+    lark: {
+      appId: "",
+      appSecret: "",
+      cliCommand: "",
+    },
   },
 };
 
@@ -54,6 +59,7 @@ export function normalizeConfig(input: unknown): VaClawConfig {
   const discord = readObject(Reflect.get(channels, "discord"));
   const telegram = readObject(Reflect.get(channels, "telegram"));
   const slack = readObject(Reflect.get(channels, "slack"));
+  const lark = readObject(Reflect.get(channels, "lark"));
 
   return {
     name: pickString(Reflect.get(data, "name"), base.name),
@@ -82,6 +88,14 @@ export function normalizeConfig(input: unknown): VaClawConfig {
         cliCommand: pickString(
           Reflect.get(slack, "cliCommand"),
           base.channels.slack.cliCommand,
+        ),
+      },
+      lark: {
+        appId: pickString(Reflect.get(lark, "appId"), base.channels.lark.appId),
+        appSecret: pickString(Reflect.get(lark, "appSecret"), base.channels.lark.appSecret),
+        cliCommand: pickString(
+          Reflect.get(lark, "cliCommand"),
+          base.channels.lark.cliCommand,
         ),
       },
     },

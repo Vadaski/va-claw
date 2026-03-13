@@ -16,10 +16,17 @@ export type SlackConfig = {
   cliCommand: string;
 };
 
+export type LarkConfig = {
+  appId: string;
+  appSecret: string;
+  cliCommand: string;
+};
+
 export type ChannelConfig = {
   discord: DiscordConfig;
   telegram: TelegramConfig;
   slack: SlackConfig;
+  lark: LarkConfig;
 };
 
 export type VaClawConfig = {

@@ -33,6 +33,9 @@ import {
   runUninstall,
 } from "./handlers.js";
 import {
+  runLarkChannelSetup as runLarkSetup,
+  runLarkChannelStart as runLarkStart,
+  runLarkChannelStatus as runLarkStatus,
   runSlackChannelSetup as runSlackSetup,
   runSlackChannelStart as runSlackStart,
   runSlackChannelStatus as runSlackStatus,
@@ -148,6 +151,18 @@ export function createCliProgram(deps: CliDeps = createDefaultCliDeps()): Comman
     );
   telegram.command("start").description("Start the Telegram channel in the foreground.").action(async () => runTelegramStart(deps));
   telegram.command("status").description("Show Telegram channel status.").action(async () => runTelegramStatus(deps));
+  const lark = channel.command("lark").description("Lark (Feishu) channel operations.");
+  lark
+    .command("setup")
+    .description("Configure Lark (Feishu) bot credentials.")
+    .option("--app-id <id>", "Lark app ID")
+    .option("--app-secret <secret>", "Lark app secret")
+    .option("--cli-command <command>", "CLI command to invoke for each message")
+    .action(async (options: { appId?: string; appSecret?: string; cliCommand?: string }) =>
+      runLarkSetup(options.appId, options.appSecret, options.cliCommand, deps),
+    );
+  lark.command("start").description("Start the Lark channel in the foreground.").action(async () => runLarkStart(deps));
+  lark.command("status").description("Show Lark channel status.").action(async () => runLarkStatus(deps));
   const slack = channel.command("slack").description("Slack channel operations.");
   slack
     .command("setup")

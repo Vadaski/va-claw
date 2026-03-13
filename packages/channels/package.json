@@ -6,10 +6,11 @@
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "scripts": {
-    "build": "pnpm --filter @va-claw/channel-telegram build && pnpm --filter @va-claw/channel-slack build && pnpm --filter @va-claw/channel-discord build && pnpm --filter @va-claw/identity build && tsc -b"
+    "build": "pnpm --filter @va-claw/channel-telegram build && pnpm --filter @va-claw/channel-slack build && pnpm --filter @va-claw/channel-discord build && pnpm --filter @va-claw/channel-lark build && pnpm --filter @va-claw/identity build && tsc -b"
   },
   "dependencies": {
     "@va-claw/channel-discord": "workspace:*",
+    "@va-claw/channel-lark": "workspace:*",
     "@va-claw/channel-slack": "workspace:*",
     "@va-claw/channel-telegram": "workspace:*",
     "@va-claw/identity": "workspace:*"

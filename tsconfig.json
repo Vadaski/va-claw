@@ -8,6 +8,7 @@
     { "path": "./packages/channels/discord" },
     { "path": "./packages/channels/telegram" },
     { "path": "./packages/channels/slack" },
+    { "path": "./packages/channels/lark" },
     { "path": "./packages/channels" },
     { "path": "./packages/cli" }
   ],

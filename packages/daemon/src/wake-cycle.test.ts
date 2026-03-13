@@ -27,6 +27,11 @@ const TEST_CONFIG: VaClawConfig = {
       appToken: "",
       cliCommand: "",
     },
+    lark: {
+      appId: "",
+      appSecret: "",
+      cliCommand: "",
+    },
   },
 };
 

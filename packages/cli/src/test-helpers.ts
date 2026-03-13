@@ -29,6 +29,11 @@ export const TEST_CONFIG: VaClawConfig = {
       appToken: "",
       cliCommand: "",
     },
+    lark: {
+      appId: "",
+      appSecret: "",
+      cliCommand: "",
+    },
   },
 };
 
@@ -78,6 +83,10 @@ export function createTestDeps(overrides: Partial<CliDeps> = {}): CliDeps & { ou
       overrides.startTelegramChannel ??
       (async () => ({ bot: {} as never, cliCommand: "va-claw", token: "" })),
     stopTelegramChannel: overrides.stopTelegramChannel ?? (async () => {}),
+    startLarkChannel:
+      overrides.startLarkChannel ??
+      (async () => ({ appId: "", appSecret: "", cliCommand: "va-claw", listener: {} as never })),
+    stopLarkChannel: overrides.stopLarkChannel ?? (async () => {}),
     startSlackChannel:
       overrides.startSlackChannel ??
       (async () => ({ app: {} as never, appToken: "", botToken: "", cliCommand: "va-claw" })),

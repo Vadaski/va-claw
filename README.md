@@ -376,7 +376,7 @@ When checking the repository, always:
 
 ## Channels
 
-Connect your wake loop to Discord, Telegram, or Slack to receive outputs and send commands remotely.
+Connect your wake loop to Discord, Telegram, Slack, or Lark (Feishu) to receive outputs and send commands remotely.
 
 ### Discord
 
@@ -399,6 +399,16 @@ va-claw channel telegram start
 va-claw channel slack setup --bot-token <xoxb-...> --app-token <xapp-...>
 va-claw channel slack start
 ```
+
+### Lark (Feishu)
+
+```bash
+va-claw channel lark setup --app-id <cli_a...> --app-secret <secret>
+va-claw channel lark start
+va-claw channel lark status
+```
+
+Create a custom app in Feishu Open Platform, enable the `im:message` event subscription, and grant message send/reply scopes.
 
 ---
 
@@ -439,6 +449,7 @@ va-claw claw remove <name>
 va-claw channel discord  setup | start | stop | status
 va-claw channel telegram setup --token <t> | start | stop | status
 va-claw channel slack    setup --bot-token <t> --app-token <t> | start | stop | status
+va-claw channel lark     setup --app-id <id> --app-secret <secret> | start | status
 ```
 
 ---
@@ -451,7 +462,7 @@ va-claw channel slack    setup --bot-token <t> --app-token <t> | start | stop | 
 | **Install** | `npm install -g va-claw` | Full gateway setup |
 | **Agents** | Claude Code, OpenCode, Codex | Own runtime |
 | **Memory** | SQLite (local) | SQLite + Markdown compaction |
-| **Channels** | Discord, Telegram, Slack | WhatsApp, iMessage, + more |
+| **Channels** | Discord, Telegram, Slack, Lark | WhatsApp, iMessage, + more |
 | **Footprint** | ~2 MB, zero cloud deps | Full service stack |
 | **Best for** | Devs who already use Claude Code / Codex | Users who want a dedicated agent |
 

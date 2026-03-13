@@ -38,3 +38,21 @@ test("slack status reports configured channel", async () => {
   ok(/Slack configured: yes/.test(deps.output()));
   ok(/Slack CLI command: codex exec/.test(deps.output()));
 });
+
+test("lark setup persists credentials", async () => {
+  let saved = TEST_CONFIG;
+  const deps = createTestDeps({
+    saveIdentity: async (config) => {
+      saved = config;
+    },
+  });
+
+  await runCli(
+    ["node", "va-claw", "channel", "lark", "setup", "--app-id", "cli_appid", "--app-secret", "cli_secret"],
+    deps,
+  );
+
+  ok(saved.channels.lark.appId === "cli_appid");
+  ok(saved.channels.lark.appSecret === "cli_secret");
+  ok(/Saved Lark config/.test(deps.output()));
+});
