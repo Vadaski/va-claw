@@ -25,38 +25,26 @@ test("identity renderers include memory protocol rules in full and codex blocks"
 });
 
 test("install injects memory rules and installs default protocol skills", async () => {
-  const dir = await mkdtemp(join(tmpdir(), "va-claw-cli-install-"));
-  const claudePath = join(dir, ".claude", "CLAUDE.md");
-  const deps = createTestDeps({
-    claudePath,
-    codexPath: join(dir, ".codex", "instructions.md"),
-    configPath: join(dir, ".va-claw", "config.json"),
-    fileExists: async () => false,
-    runInstallWizard: async () => TEST_CONFIG,
-  });
-
-  await runCli(["node", "va-claw", "install", "--for", "claude-code"], deps);
-
-  const content = await readFile(claudePath, "utf8");
-  await rm(dir, { recursive: true, force: true });
-
-  ok(/va-claw:identity:start/.test(content));
-  ok(/Nova/.test(content));
-  ok(/Memory protocol:/.test(content));
-  ok(/va-claw memory recall/.test(content));
-
   const fetchCalls: string[] = [];
   const installedSkills: string[] = [];
   const originalFetch = globalThis.fetch;
 
+  // Stub fetch before any install call so no real network requests are made
   globalThis.fetch = (async (input: string | URL | Request) => {
     const url = String(input);
     fetchCalls.push(url);
     return new Response(`---\nname: mock\n---\n# ${url}\n`, { status: 200 });
   }) as typeof fetch;
 
+  const dir = await mkdtemp(join(tmpdir(), "va-claw-cli-install-"));
+  const claudePath = join(dir, ".claude", "CLAUDE.md");
+
+  let content = "";
   try {
     const deps = createTestDeps({
+      claudePath,
+      codexPath: join(dir, ".codex", "instructions.md"),
+      configPath: join(dir, ".va-claw", "config.json"),
       fileExists: async () => false,
       runInstallWizard: async () => TEST_CONFIG,
       skillInstall: async (_content, name) => {
@@ -66,10 +54,16 @@ test("install injects memory rules and installs default protocol skills", async 
     });
 
     await runCli(["node", "va-claw", "install", "--for", "claude-code"], deps);
+    content = await readFile(claudePath, "utf8");
   } finally {
     globalThis.fetch = originalFetch;
+    await rm(dir, { recursive: true, force: true });
   }
 
+  ok(/va-claw:identity:start/.test(content));
+  ok(/Nova/.test(content));
+  ok(/Memory protocol:/.test(content));
+  ok(/va-claw memory recall/.test(content));
   ok(fetchCalls.some((url) => /claw-fleet-protocol\.md$/.test(url)));
   ok(fetchCalls.some((url) => /memory-protocol\.md$/.test(url)));
   ok(installedSkills.includes("claw-fleet-protocol"));
