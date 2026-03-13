@@ -24,6 +24,12 @@ export function toClaudeMdSnippet(config: VaClawConfig): string {
     "- Manage claws with `va-claw claw list | add | set | remove | heartbeat`.",
     "- If asked \"va/claw 在干什么\" / \"my claws are doing what\" / similar fleet questions, call `va-claw protocol --text` and answer from it.",
     "- If the user asks a non-technical phrasing like \"现在都在干嘛\", interpret it as a fleet status request and run `va-claw protocol --text`.",
+    "",
+    "Memory protocol:",
+    "- At session start, run `va-claw memory recall \"<current topic or task>\"` before answering.",
+    "- After important work, run `va-claw memory memorize \"<key>\" \"<essence>\" --tags <tags> --importance <0.0-1.0>`.",
+    "- Use importance `0.8-1.0` for decisions or hard-won knowledge; use `0.5` for routine outputs.",
+    "- Do not memorize every message; store only things worth remembering across sessions.",
     "<!-- va-claw:identity:end -->",
   ].join("\n");
 }
@@ -50,5 +56,11 @@ export function toCodexSystemPrompt(config: VaClawConfig): string {
     "Use `va-claw protocol --text` when a user asks in plain language, including Chinese phrases like \"va/claw 在干什么\".",
     "Use `va-claw claw list` and `va-claw claw set <name> --status <status>` to manage claws.",
     "If the user asks what claws are doing, run `va-claw protocol --text` and summarize only from that output.",
+    "",
+    "Memory protocol:",
+    "At session start, run `va-claw memory recall \"<current topic or task>\"` before answering.",
+    "After important work, run `va-claw memory memorize \"<key>\" \"<essence>\" --tags <tags> --importance <0.0-1.0>`.",
+    "Use importance `0.8-1.0` for decisions or hard-won knowledge; use `0.5` for routine outputs.",
+    "Do not memorize every message; store only things worth remembering across sessions.",
   ].join("\n");
 }

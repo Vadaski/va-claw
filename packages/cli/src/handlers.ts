@@ -20,6 +20,8 @@ import { waitForStopSignal } from "./wait.js";
 
 const CLAW_FLEET_PROTOCOL_SKILL_URL =
   "https://raw.githubusercontent.com/Vadaski/va-claw/main/skills/claw-fleet-protocol.md";
+const MEMORY_SKILL_URL =
+  "https://raw.githubusercontent.com/Vadaski/va-claw/main/skills/memory-protocol.md";
 
 export async function runInstall(target: InstallTarget, deps: CliDeps): Promise<void> {
   const installTarget = normalizeInstallTarget(target);
@@ -40,6 +42,10 @@ export async function runInstall(target: InstallTarget, deps: CliDeps): Promise<
   const fleetSkillName = await installFleetProtocolSkill(deps);
   if (fleetSkillName) {
     summary.push(`Claw fleet protocol skill: ${fleetSkillName}`);
+  }
+  const memorySkillName = await installMemoryProtocolSkill(deps);
+  if (memorySkillName) {
+    summary.push(`Memory protocol skill: ${memorySkillName}`);
   }
   for (const line of summary) {
     writeLine(deps.stdout, line);
@@ -254,13 +260,21 @@ async function buildProtocolReport(deps: CliDeps): Promise<{
 }
 
 async function installFleetProtocolSkill(deps: CliDeps): Promise<string | null> {
+  return installRemoteSkill(deps, CLAW_FLEET_PROTOCOL_SKILL_URL, "claw-fleet-protocol");
+}
+
+async function installMemoryProtocolSkill(deps: CliDeps): Promise<string | null> {
+  return installRemoteSkill(deps, MEMORY_SKILL_URL, "memory-protocol");
+}
+
+async function installRemoteSkill(deps: CliDeps, url: string, name: string): Promise<string | null> {
   try {
-    const response = await fetch(CLAW_FLEET_PROTOCOL_SKILL_URL);
+    const response = await fetch(url);
     if (!response.ok) {
       return null;
     }
     const content = await response.text();
-    return await deps.skillInstall(content, "claw-fleet-protocol");
+    return await deps.skillInstall(content, name);
   } catch {
     return null;
   }
