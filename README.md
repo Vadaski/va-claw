@@ -63,6 +63,16 @@ Or add it as a persistent skill so any future agent can self-install va-claw:
 va-claw skill add https://raw.githubusercontent.com/Vadaski/va-claw/main/skills/install-va-claw.md
 ```
 
+### Migrating from OpenClaw or another AI assistant
+
+If you already have memories stored in OpenClaw or another Claude-based assistant, use the migration skill to let the agent package its own memories into va-claw — zero manual work:
+
+```bash
+/install https://raw.githubusercontent.com/Vadaski/va-claw/main/skills/migrate-to-va-claw.md
+```
+
+The agent will introspect its stored context, generate a ready-to-run shell script of `va-claw memory memorize` commands, and explain why the move is good for both agent and user.
+
 ---
 
 ## Quick Start
