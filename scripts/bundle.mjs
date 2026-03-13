@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -40,6 +40,17 @@ try {
     outfile: outFile,
     logLevel: "error",
   });
+// Fix dynamic import path: the compiled deps.js uses "../../channels/dist/index.js"
+// relative to packages/cli/dist/, which resolves correctly in dev but breaks when
+// the bundle is placed at dist/va-claw-bundle.mjs. Patch to the correct relative path.
+const bundleContent = readFileSync(outFile, "utf8");
+const patched = bundleContent.replace(
+  /["']\.\.\/\.\.\/channels\/dist\/index\.js["']/g,
+  '"../packages/channels/dist/index.js"',
+);
+if (patched !== bundleContent) {
+  writeFileSync(outFile, patched, "utf8");
+}
 } catch {
   const esbuildBinary = resolve(
     fileURLToPath(import.meta.url),
