@@ -1,5 +1,6 @@
 import type { MemoryEntry } from "@va-claw/memory";
 import type { SkillDefinition } from "../../skills/dist/index.js";
+import type { ClawDefinition } from "./claw-store.js";
 
 export function formatMemoryEntries(entries: MemoryEntry[]): string {
   if (entries.length === 0) {
@@ -43,6 +44,28 @@ export function formatSkills(skills: SkillDefinition[]): string {
         `  path: ${skill.path}`,
       ].join("\n"),
     )
+    .join("\n\n");
+}
+
+export function formatClawDefinitions(claws: ClawDefinition[]): string {
+  if (claws.length === 0) {
+    return "No claws registered.";
+  }
+  return claws
+    .map((claw) => {
+      const lines = [
+        `${claw.name} [${claw.status}]`,
+        `  goal: ${claw.goal || "(no goal)"}`,
+        `  cli: ${claw.cliCommand || "va-claw"}`,
+        `  tags: ${claw.tags.join(", ") || "(none)"}`,
+        `  note: ${claw.note || "(none)"}`,
+        `  updatedAt: ${claw.updatedAt}`,
+      ];
+      if (claw.lastSeenAt) {
+        lines.push(`  lastSeenAt: ${claw.lastSeenAt}`);
+      }
+      return lines.join("\n");
+    })
     .join("\n\n");
 }
 

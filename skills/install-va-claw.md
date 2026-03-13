@@ -124,6 +124,10 @@ va-claw channel slack start
 
 Create a Slack app at: https://api.slack.com/apps
 
+## Natural-language claw-fleet checks are enabled on install
+
+`va-claw install` will automatically install a built-in skill so you can ask for claw status in natural language (for example, "我的 va/claw 在干什么" or "what are my claws doing").
+
 ## Verify everything is working
 
 ```bash

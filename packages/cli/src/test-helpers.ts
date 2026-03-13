@@ -47,6 +47,7 @@ export function createTestDeps(overrides: Partial<CliDeps> = {}): CliDeps & { ou
     codexPath: "/tmp/instructions.md",
     configPath: "/tmp/config.json",
     memoryDbPath: "/tmp/memory.db",
+    clawRegistryPath: "/tmp/claws.json",
     platform: "linux",
     spawnSync: overrides.spawnSync ?? ((command, args, options) => spawnSync(command, args, options)),
     stdout: stream,

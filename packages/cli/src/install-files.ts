@@ -26,6 +26,10 @@ export function resolveMemoryDbPath(home = homedir()): string {
   return join(home, ".va-claw", "memory.db");
 }
 
+export function resolveClawRegistryPath(home = homedir()): string {
+  return join(home, ".va-claw", "claws.json");
+}
+
 export async function fileExists(path: string): Promise<boolean> {
   try {
     await access(path);

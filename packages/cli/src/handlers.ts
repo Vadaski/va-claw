@@ -1,9 +1,24 @@
 import { CLAUDE_MARKERS, CODEX_MARKERS } from "./install-files.js";
 import { countMemoryEntries, findLastWakeAt } from "./memory-status.js";
-import { formatMemoryEntries, formatSkills, writeLine } from "./output.js";
+import {
+  formatClawDefinitions,
+  formatMemoryEntries,
+  formatSkills,
+  writeLine,
+} from "./output.js";
 import { detectServiceType, probeServiceRunning, stopInstalledService } from "./platform.js";
+import {
+  listClaws,
+  registerClaw,
+  removeClaw,
+  updateClaw,
+  validateClawStatus,
+} from "./claw-store.js";
 import type { CliDeps, InstallTarget } from "./types.js";
 import { waitForStopSignal } from "./wait.js";
+
+const CLAW_FLEET_PROTOCOL_SKILL_URL =
+  "https://raw.githubusercontent.com/Vadaski/va-claw/main/skills/claw-fleet-protocol.md";
 
 export async function runInstall(target: InstallTarget, deps: CliDeps): Promise<void> {
   const installTarget = normalizeInstallTarget(target);
@@ -21,6 +36,10 @@ export async function runInstall(target: InstallTarget, deps: CliDeps): Promise<
   const serviceType = detectServiceType(deps.platform);
   await deps.installDaemonService(serviceType);
   summary.push(`Daemon service: ${serviceType}`);
+  const fleetSkillName = await installFleetProtocolSkill(deps);
+  if (fleetSkillName) {
+    summary.push(`Claw fleet protocol skill: ${fleetSkillName}`);
+  }
   for (const line of summary) {
     writeLine(deps.stdout, line);
   }
@@ -55,6 +74,205 @@ export async function runStatus(deps: CliDeps): Promise<void> {
   writeLine(deps.stdout, `Discord: ${runtime.discord}`);
   writeLine(deps.stdout, `Last wake: ${lastWakeAt ?? "never"}`);
   writeLine(deps.stdout, `Memory entries: ${memoryCount}`);
+}
+
+export async function runClawStatus(deps: CliDeps): Promise<void> {
+  const clawStatus = await buildProtocolReport(deps);
+  writeLine(deps.stdout, formatClawDefinitions(clawStatus.claws));
+  writeLine(
+    deps.stdout,
+    `Daemon running: ${clawStatus.runtime.running ? "yes" : "no"} | service: ${clawStatus.runtime.serviceRunning ? "running" : "stopped"} | wakeCount: ${clawStatus.runtime.wakeCount}`,
+  );
+}
+
+export async function runClawList(deps: CliDeps): Promise<void> {
+  const claws = await listClaws(deps.clawRegistryPath);
+  writeLine(deps.stdout, formatClawDefinitions(claws));
+}
+
+export async function runClawAdd(
+  name: string,
+  options: {
+    goal?: string;
+    status?: string;
+    cliCommand?: string;
+    note?: string;
+    tags?: string;
+  },
+  deps: CliDeps,
+): Promise<void> {
+  const normalizedName = name.trim();
+  if (normalizedName === "") {
+    throw new Error("Claw name cannot be empty.");
+  }
+  const status = options.status
+    ? validateClawStatus(options.status)
+    : null;
+  if (options.status && status === null) {
+    throw new Error(`Invalid claw status: ${options.status}`);
+  }
+  const claw = await registerClaw(deps.clawRegistryPath, {
+    name: normalizedName,
+    goal: options.goal,
+    status: status ?? undefined,
+    cliCommand: options.cliCommand,
+    note: options.note,
+    tags: options.tags ? splitCommaList(options.tags) : [],
+  });
+  writeLine(deps.stdout, formatClawDefinitions([claw]));
+}
+
+export async function runClawUpdate(
+  name: string,
+  options: {
+    goal?: string;
+    status?: string;
+    cliCommand?: string;
+    note?: string;
+    tags?: string;
+    seen?: string;
+  },
+  deps: CliDeps,
+): Promise<void> {
+  const status = options.status ? validateClawStatus(options.status) : null;
+  const normalizedName = name.trim();
+  if (normalizedName === "") {
+    throw new Error("Claw name cannot be empty.");
+  }
+  if (options.status && status === null) {
+    throw new Error(`Invalid claw status: ${options.status}`);
+  }
+  const patch = {
+    goal: options.goal,
+    status: status ?? undefined,
+    cliCommand: options.cliCommand,
+    note: options.note,
+    tags: options.tags ? splitCommaList(options.tags) : undefined,
+    seen: options.seen === "1" || options.seen === "true" || options.seen === "yes",
+  };
+  const claw = await updateClaw(deps.clawRegistryPath, normalizedName, patch);
+  if (!claw) {
+    writeLine(deps.stdout, `Claw not found: ${name}`);
+    return;
+  }
+  writeLine(deps.stdout, formatClawDefinitions([claw]));
+}
+
+export async function runClawRemove(name: string, deps: CliDeps): Promise<void> {
+  const normalizedName = name.trim();
+  if (normalizedName === "") {
+    throw new Error("Claw name cannot be empty.");
+  }
+  const removed = await removeClaw(deps.clawRegistryPath, normalizedName);
+  writeLine(deps.stdout, removed ? `Removed claw: ${normalizedName}` : `Claw not found: ${normalizedName}`);
+}
+
+export async function runClawHeartbeat(name: string, deps: CliDeps): Promise<void> {
+  const normalizedName = name.trim();
+  if (normalizedName === "") {
+    throw new Error("Claw name cannot be empty.");
+  }
+  const claw = await updateClaw(deps.clawRegistryPath, normalizedName, { seen: true, status: "running" });
+  if (!claw) {
+    writeLine(deps.stdout, `Claw not found: ${name}`);
+    return;
+  }
+  writeLine(deps.stdout, formatClawDefinitions([claw]));
+}
+
+export async function runProtocol(deps: CliDeps, textMode = false): Promise<void> {
+  const report = await buildProtocolReport(deps);
+  if (textMode) {
+    writeLine(deps.stdout, `protocol: ${report.protocol}`);
+    writeLine(deps.stdout, `timestamp: ${report.timestamp}`);
+    writeLine(deps.stdout, `daemon.running: ${report.runtime.running}`);
+    writeLine(deps.stdout, `daemon.serviceRunning: ${report.runtime.serviceRunning}`);
+    writeLine(deps.stdout, `daemon.discord: ${report.runtime.discord}`);
+    writeLine(deps.stdout, `daemon.wakeCount: ${report.runtime.wakeCount}`);
+    writeLine(deps.stdout, `daemon.lastWakeAt: ${report.runtime.lastWakeAt ?? "never"}`);
+    writeLine(deps.stdout, `memory.entries: ${report.memory.entries}`);
+    writeLine(deps.stdout, `memory.lastWakeAt: ${report.memory.lastWakeAt ?? "never"}`);
+    writeLine(deps.stdout, "");
+    writeLine(deps.stdout, "Claws:");
+    writeLine(deps.stdout, formatClawDefinitions(report.claws));
+    return;
+  }
+  writeLine(deps.stdout, JSON.stringify(report, null, 2));
+}
+
+async function buildProtocolReport(deps: CliDeps): Promise<{
+  protocol: string;
+  timestamp: string;
+  runtime: {
+    running: boolean;
+    serviceRunning: boolean;
+    discord: string;
+    wakeCount: number;
+    lastWakeAt: string | null;
+  };
+  memory: {
+    entries: number;
+    lastWakeAt: string | null;
+  };
+  claws: {
+    name: string;
+    goal: string;
+    status: string;
+    cliCommand: string;
+    note: string;
+    tags: string[];
+    lastSeenAt?: string;
+    createdAt: string;
+    updatedAt: string;
+  }[];
+}> {
+  const runtime = await deps.getDaemonStatus();
+  const serviceType = safeDetectServiceType(deps.platform);
+  const serviceRunning = serviceType ? probeServiceRunning(serviceType, deps.spawnSync) : false;
+  const runtimeLastWakeAt = runtime.lastWakeAt?.toISOString() ?? null;
+  const fallbackLastWakeAt = await findLastWakeAt(deps.memoryDbPath, deps.fileExists);
+  const memoryCount = await countMemoryEntries(deps.memoryDbPath, deps.fileExists);
+  const claws = await listClaws(deps.clawRegistryPath);
+
+  return {
+    protocol: "va-claw-claw-protocol-1",
+    timestamp: new Date().toISOString(),
+    runtime: {
+      running: runtime.running,
+      serviceRunning,
+      discord: runtime.discord,
+      wakeCount: runtime.wakeCount,
+      lastWakeAt: runtimeLastWakeAt ?? fallbackLastWakeAt,
+    },
+    memory: {
+      entries: memoryCount,
+      lastWakeAt: runtimeLastWakeAt ?? fallbackLastWakeAt,
+    },
+    claws: claws.map((claw) => ({
+      name: claw.name,
+      goal: claw.goal,
+      status: claw.status,
+      cliCommand: claw.cliCommand,
+      note: claw.note,
+      tags: claw.tags,
+      lastSeenAt: claw.lastSeenAt,
+      createdAt: claw.createdAt,
+      updatedAt: claw.updatedAt,
+    })),
+  };
+}
+
+async function installFleetProtocolSkill(deps: CliDeps): Promise<string | null> {
+  try {
+    const response = await fetch(CLAW_FLEET_PROTOCOL_SKILL_URL);
+    if (!response.ok) {
+      return null;
+    }
+    const content = await response.text();
+    return await deps.skillInstall(content, "claw-fleet-protocol");
+  } catch {
+    return null;
+  }
 }
 
 export async function runMemorySearch(query: string, deps: CliDeps): Promise<void> {

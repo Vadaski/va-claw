@@ -36,6 +36,7 @@ export type CliDeps = {
   codexPath: string;
   configPath: string;
   memoryDbPath: string;
+  clawRegistryPath: string;
   platform: NodeJS.Platform;
   spawnSync: SpawnFn;
   stdout: OutputStream;

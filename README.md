@@ -63,6 +63,8 @@ Or add it as a persistent skill so any future agent can self-install va-claw:
 va-claw skill add https://raw.githubusercontent.com/Vadaski/va-claw/main/skills/install-va-claw.md
 ```
 
+Fleet management language support (`va-claw` + `claw` fleet status) is included by default after installation.
+
 ### Migrating from OpenClaw or another AI assistant
 
 If you already have memories stored in OpenClaw or another Claude-based assistant, use the migration skill to let the agent package its own memories into va-claw — zero manual work:
@@ -147,6 +149,31 @@ va-claw status
 ---
 
 ## Features
+
+### 🕸 Fleet protocol for long-running claws
+
+Once installed, you and your agent can query running claw status through natural language:
+
+- "我的 va/claw 们都在干什么？"
+- "What are my claws doing?"
+- "Show my claw fleet"
+- "我的 claw 现在状态"
+
+This maps to:
+
+```bash
+va-claw protocol --text
+```
+
+Management operations remain through CLI:
+
+```bash
+va-claw claw list
+va-claw claw add <name> --goal "..." --status idle
+va-claw claw set <name> --status running
+va-claw claw heartbeat <name>
+va-claw claw remove <name>
+```
 
 ### 🧠 Memory
 
@@ -332,6 +359,7 @@ va-claw channel slack start
 # Core
 va-claw install [--for claude-code|codex|all]
 va-claw start | stop | status | uninstall
+va-claw protocol [--text]
 
 # Identity
 va-claw identity setup | show | edit
@@ -349,6 +377,14 @@ va-claw memory clear
 
 # Skills
 va-claw skill list | add <path-or-url> | remove <name> | show <name>
+
+# Long-running claw fleet
+va-claw claw status
+va-claw claw list
+va-claw claw add <name> [--goal ...] [--status running|working|idle|waiting|error|offline|stopped] [--cli-command ...] [--note ...] [--tags ...]
+va-claw claw set <name> [--goal ...] [--status ...] [--cli-command ...] [--note ...] [--tags ...] [--seen]
+va-claw claw heartbeat <name>
+va-claw claw remove <name>
 
 # Channels
 va-claw channel discord  setup | start | stop | status

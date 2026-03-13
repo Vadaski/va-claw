@@ -16,11 +16,18 @@ import {
   runMemoryMemorize,
   runMemoryRecall,
   runMemoryUpdate,
+  runProtocol,
   runSkillAdd,
   runSkillList,
   runSkillRemove,
   runSkillShow,
   runStart,
+  runClawAdd,
+  runClawHeartbeat,
+  runClawList,
+  runClawRemove,
+  runClawStatus,
+  runClawUpdate,
   runStatus,
   runStop,
   runUninstall,
@@ -50,6 +57,11 @@ export function createCliProgram(deps: CliDeps = createDefaultCliDeps()): Comman
   program.command("stop").description("Stop the daemon.").action(async () => runStop(deps));
   program.command("status").description("Show daemon and memory status.").action(async () => runStatus(deps));
   program.command("uninstall").description("Remove daemon service and injected prompts.").action(async () => runUninstall(deps));
+  program
+    .command("protocol")
+    .description("Emit a machine-readable protocol summary for agent-facing integrations.")
+    .option("--text", "Print a human-readable protocol summary instead of JSON.")
+    .action(async (options: { text?: boolean }) => runProtocol(deps, Boolean(options.text)));
 
   const memory = program.command("memory").description("Memory operations.");
   memory
@@ -148,6 +160,54 @@ export function createCliProgram(deps: CliDeps = createDefaultCliDeps()): Comman
     );
   slack.command("start").description("Start the Slack channel in the foreground.").action(async () => runSlackStart(deps));
   slack.command("status").description("Show Slack channel status.").action(async () => runSlackStatus(deps));
+
+  const claw = program.command("claw").description("Long-running claw operations.");
+  claw.command("status").description("Show claw status and daemon summary.").action(async () => runClawStatus(deps));
+  claw.command("list").description("List all registered claws.").action(async () => runClawList(deps));
+  claw
+    .command("add")
+    .description("Register a long-running claw.")
+    .argument("<name>")
+    .option("--goal <goal>", "Describe what this claw is responsible for.")
+    .option("--status <status>", "running | working | idle | waiting | error | offline | stopped.")
+    .option("--cli-command <command>", "Command to execute this claw's actions (default: va-claw).")
+    .option("--note <note>", "Single-line note for this claw.")
+    .option("--tags <tags>", "Comma-separated tags.")
+    .action((name: string, options: {
+      goal?: string;
+      status?: string;
+      cliCommand?: string;
+      note?: string;
+      tags?: string;
+    }) => runClawAdd(name, options, deps));
+  claw
+    .command("set")
+    .description("Update a claw's state.")
+    .argument("<name>")
+    .option("--goal <goal>", "New goal for this claw.")
+    .option("--status <status>", "running | working | idle | waiting | error | offline | stopped.")
+    .option("--cli-command <command>", "Update command used for this claw.")
+    .option("--note <note>", "Update note.")
+    .option("--tags <tags>", "Replace tags, comma-separated.")
+    .option("--seen", "Mark claw as alive now.")
+    .action((name: string, options: {
+      goal?: string;
+      status?: string;
+      cliCommand?: string;
+      note?: string;
+      tags?: string;
+      seen?: boolean;
+    }) => runClawUpdate(name, { ...options, seen: options.seen ? "true" : undefined }, deps));
+  claw
+    .command("heartbeat")
+    .description("Mark a claw as active and update lastSeenAt.")
+    .argument("<name>")
+    .action((name: string) => runClawHeartbeat(name, deps));
+  claw
+    .command("remove")
+    .description("Unregister a claw.")
+    .argument("<name>")
+    .action((name: string) => runClawRemove(name, deps));
 
   return program;
 }
