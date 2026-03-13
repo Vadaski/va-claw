@@ -32,6 +32,10 @@
 
 ## What is va-claw?
 
+<p align="center">
+<img src="docs/comic.svg" alt="va-claw comic strip: from session-reset pain to OpenClaw fleet" width="900"/>
+</p>
+
 **va-claw** is a minimal plugin that adds OpenClaw's three core superpowers to any CLI agent you already have:
 
 | | Without va-claw | With va-claw |
@@ -220,6 +224,13 @@ va-claw skill list
 va-claw skill show <name>
 va-claw skill remove <name>
 ```
+
+> **Security tip:** Before installing skills from unknown sources, vet them first with the [Skill Vetter](https://clawhub.ai/spclaudehome/Skill-vetter) — a zero-footprint skill that checks for red flags (credential access, outbound requests, obfuscated code) and produces a risk report before you commit.
+>
+> ```bash
+> # Install the vetter once, use it forever
+> va-claw skill add https://clawhub.ai/spclaudehome/Skill-vetter
+> ```
 
 A skill file looks like this:
 

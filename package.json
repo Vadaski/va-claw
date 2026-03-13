@@ -1,6 +1,6 @@
 {
   "name": "va-claw",
-  "version": "0.1.0",
+  "version": "0.1.3",
   "description": "Persistent memory, identity, and wake-loop daemon for Claude Code & Codex",
   "keywords": [
     "claude-code",
@@ -35,9 +35,11 @@
   "scripts": {
     "build": "tsc -b",
     "test": "node --test packages/*/dist/*.test.js",
-    "prepublishOnly": "pnpm run build"
+    "bundle": "node scripts/bundle.mjs",
+    "prepublishOnly": "pnpm run build && node scripts/bundle.mjs"
   },
   "devDependencies": {
+    "esbuild": "^0.27.3",
     "typescript": "file:vendor/typescript"
   }
 }

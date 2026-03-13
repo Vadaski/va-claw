@@ -19,8 +19,11 @@ export function parseSkillMarkdown(source: string, path: string): SkillDefinitio
 }
 
 function parseFrontmatterBlock(block: string): FrontmatterShape {
-  const values = new Map<string, string>();
-  for (const rawLine of block.split(/\r?\n/)) {
+  const values = new Map<string, string | string[]>();
+  const lines = block.split(/\r?\n/);
+
+  for (let index = 0; index < lines.length; index += 1) {
+    const rawLine = lines[index];
     const line = rawLine.trim();
     if (line === "") {
       continue;
@@ -31,7 +34,37 @@ function parseFrontmatterBlock(block: string): FrontmatterShape {
     }
     const key = line.slice(0, separator).trim();
     const value = line.slice(separator + 1).trim();
-    values.set(key, value);
+
+    if (value !== "") {
+      values.set(key, value);
+      continue;
+    }
+
+    const baseIndent = rawLine.length - rawLine.trimStart().length;
+    const items: string[] = [];
+
+    while (index + 1 < lines.length) {
+      const nextRawLine = lines[index + 1];
+      const nextLine = nextRawLine.trim();
+
+      if (nextLine === "") {
+        index += 1;
+        continue;
+      }
+
+      const nextIndent = nextRawLine.length - nextRawLine.trimStart().length;
+      if (nextIndent <= baseIndent) {
+        break;
+      }
+      if (!nextLine.startsWith("-")) {
+        throw new Error(`Invalid frontmatter line: ${nextRawLine}`);
+      }
+
+      items.push(nextLine.slice(1).trim());
+      index += 1;
+    }
+
+    values.set(key, items);
   }
 
   const name = parseScalar(values.get("name"), "name");
@@ -41,9 +74,12 @@ function parseFrontmatterBlock(block: string): FrontmatterShape {
   return { name, description, version, triggers };
 }
 
-function parseScalar(rawValue: string | undefined, field: string): string {
+function parseScalar(rawValue: string | string[] | undefined, field: string): string {
   if (!rawValue) {
     throw new Error(`Skill frontmatter is missing "${field}".`);
+  }
+  if (Array.isArray(rawValue)) {
+    throw new Error(`Skill frontmatter field "${field}" must be a scalar.`);
   }
   if (
     (rawValue.startsWith("'") && rawValue.endsWith("'")) ||
@@ -54,12 +90,15 @@ function parseScalar(rawValue: string | undefined, field: string): string {
   return rawValue;
 }
 
-function parseArray(rawValue: string | undefined, field: string): string[] {
+function parseArray(rawValue: string | string[] | undefined, field: string): string[] {
   if (!rawValue) {
     throw new Error(`Skill frontmatter is missing "${field}".`);
   }
+  if (Array.isArray(rawValue)) {
+    return rawValue.map((item) => parseScalar(item.trim(), field));
+  }
   if (!rawValue.startsWith("[") || !rawValue.endsWith("]")) {
-    throw new Error(`Skill frontmatter field "${field}" must be an inline array.`);
+    throw new Error(`Skill frontmatter field "${field}" must be an array.`);
   }
 
   const body = rawValue.slice(1, -1).trim();

@@ -106,7 +106,7 @@ export function createCliProgram(deps: CliDeps = createDefaultCliDeps()): Comman
   skill.command("list").description("List installed and project skills.").action(async () => runSkillList(deps));
   skill
     .command("add")
-    .description("Install a skill from a local Markdown file.")
+    .description("Install a skill from a local Markdown file or URL.\n\nTip: vet unknown skills first — va-claw skill add https://clawhub.ai/spclaudehome/Skill-vetter")
     .argument("<path-or-url>")
     .action(async (pathOrUrl: string) => runSkillAdd(pathOrUrl, deps));
   skill

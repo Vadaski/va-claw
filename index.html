@@ -106,21 +106,88 @@
         }
 
         .pixel-border-violet {
-            box-shadow: 
-                4px 0 0 var(--violet), 
-                -4px 0 0 var(--violet), 
-                0 4px 0 var(--violet), 
+            box-shadow:
+                4px 0 0 var(--violet),
+                -4px 0 0 var(--violet),
+                0 4px 0 var(--violet),
                 0 -4px 0 var(--violet);
             margin: 4px;
         }
 
         .pixel-border-cyan {
-            box-shadow: 
-                4px 0 0 var(--cyan), 
-                -4px 0 0 var(--cyan), 
-                0 4px 0 var(--cyan), 
+            box-shadow:
+                4px 0 0 var(--cyan),
+                -4px 0 0 var(--cyan),
+                0 4px 0 var(--cyan),
                 0 -4px 0 var(--cyan);
             margin: 4px;
+        }
+
+        .pixel-border-amber {
+            box-shadow:
+                4px 0 0 var(--amber),
+                -4px 0 0 var(--amber),
+                0 4px 0 var(--amber),
+                0 -4px 0 var(--amber);
+            margin: 4px;
+        }
+
+        .pixel-border-green {
+            box-shadow:
+                4px 0 0 var(--green),
+                -4px 0 0 var(--green),
+                0 4px 0 var(--green),
+                0 -4px 0 var(--green);
+            margin: 4px;
+        }
+
+        /* COMIC STRIP */
+        .comic-strip-section {
+            margin-bottom: 80px;
+        }
+
+        .comic-strip {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 24px;
+        }
+
+        @media (max-width: 800px) {
+            .comic-strip {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 500px) {
+            .comic-strip {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .comic-panel {
+            background: #080810;
+            padding: 12px;
+            position: relative;
+            cursor: default;
+            transition: transform 0.1s steps(2);
+        }
+
+        .comic-panel:hover {
+            transform: translate(-2px, -2px);
+        }
+
+        .panel-num {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 9px;
+            margin-bottom: 8px;
+            opacity: 0.8;
+        }
+
+        .panel-svg {
+            width: 100%;
+            height: auto;
+            display: block;
+            image-rendering: pixelated;
         }
 
         .btn {
@@ -470,6 +537,200 @@
             <div class="hero-btns">
                 <a href="https://github.com/Vadaski/va-claw" class="btn pixel-border btn-yellow">[ ★ STAR ON GITHUB ]</a>
                 <a href="#install" class="btn pixel-border">[ ↓ GET STARTED ]</a>
+            </div>
+        </section>
+
+        <!-- COMIC STRIP: WHY VA-CLAW EXISTS -->
+        <section class="comic-strip-section">
+            <h2 class="section-title neon-text" style="text-align:center; margin-bottom:40px; font-size:14px;">// WHY VA-CLAW EXISTS</h2>
+            <div class="comic-strip">
+
+                <!-- PANEL 1: The Problem -->
+                <div class="comic-panel pixel-border-amber">
+                    <div class="panel-num" style="color:var(--amber)">01</div>
+                    <svg viewBox="0 0 200 160" xmlns="http://www.w3.org/2000/svg" class="panel-svg">
+                        <!-- Background -->
+                        <rect width="200" height="160" fill="#0a0a0f"/>
+                        <!-- Desk -->
+                        <rect x="20" y="120" width="160" height="8" fill="#1a1a2e" stroke="#00ffff" stroke-width="1"/>
+                        <!-- Monitor -->
+                        <rect x="60" y="55" width="80" height="55" rx="2" fill="#0d0d1a" stroke="#00ffff" stroke-width="1.5"/>
+                        <rect x="65" y="60" width="70" height="42" fill="#001a00"/>
+                        <!-- Screen text: session reset -->
+                        <text x="68" y="72" font-family="monospace" font-size="5" fill="#ff4444">SESSION RESET</text>
+                        <text x="68" y="82" font-family="monospace" font-size="5" fill="#ff6b35">Who are you?</text>
+                        <text x="68" y="92" font-family="monospace" font-size="5" fill="#ff4444">No memory found</text>
+                        <text x="68" y="102" font-family="monospace" font-size="4" fill="#666">▋</text>
+                        <!-- Monitor stand -->
+                        <rect x="95" y="110" width="10" height="10" fill="#1a1a2e" stroke="#00ffff" stroke-width="1"/>
+                        <!-- Person (pixel art style) -->
+                        <!-- Head -->
+                        <rect x="22" y="60" width="20" height="20" rx="2" fill="#ffcc99" stroke="#cc9966" stroke-width="1"/>
+                        <rect x="26" y="65" width="4" height="4" fill="#333"/>
+                        <rect x="32" y="65" width="4" height="4" fill="#333"/>
+                        <rect x="27" y="73" width="8" height="2" fill="#cc6666"/>
+                        <!-- Hair -->
+                        <rect x="22" y="58" width="20" height="5" fill="#4a3000"/>
+                        <!-- Body -->
+                        <rect x="18" y="80" width="28" height="28" rx="2" fill="#2244aa" stroke="#1133aa" stroke-width="1"/>
+                        <!-- Arms up frustrated -->
+                        <rect x="4" y="78" width="14" height="6" rx="2" fill="#ffcc99" transform="rotate(-30 11 81)"/>
+                        <rect x="46" y="78" width="14" height="6" rx="2" fill="#ffcc99" transform="rotate(30 53 81)"/>
+                        <!-- Legs -->
+                        <rect x="22" y="108" width="10" height="12" fill="#1a1a5e"/>
+                        <rect x="32" y="108" width="10" height="12" fill="#1a1a5e"/>
+                        <!-- Sweat drops / frustration -->
+                        <text x="44" y="58" font-family="monospace" font-size="10" fill="#ff4444">😤</text>
+                        <!-- Caption -->
+                        <text x="100" y="148" font-family="monospace" font-size="4.5" fill="#ff6b35" text-anchor="middle">CLAUDE CODE FORGETS</text>
+                        <text x="100" y="156" font-family="monospace" font-size="4.5" fill="#ff4444" text-anchor="middle">YOU. EVERY. SESSION.</text>
+                    </svg>
+                </div>
+
+                <!-- PANEL 2: The Transformation -->
+                <div class="comic-panel pixel-border-cyan">
+                    <div class="panel-num" style="color:var(--cyan)">02</div>
+                    <svg viewBox="0 0 200 160" xmlns="http://www.w3.org/2000/svg" class="panel-svg">
+                        <rect width="200" height="160" fill="#0a0a0f"/>
+                        <!-- Terminal glow effect -->
+                        <rect x="10" y="20" width="180" height="70" rx="3" fill="#001a00" stroke="#00ff41" stroke-width="1.5"/>
+                        <rect x="14" y="24" width="172" height="62" fill="#000d00"/>
+                        <!-- Terminal content -->
+                        <text x="18" y="37" font-family="monospace" font-size="5.5" fill="#00ff41">$ npm install -g va-claw</text>
+                        <text x="18" y="49" font-family="monospace" font-size="5" fill="#666">added 1 package in 4s</text>
+                        <text x="18" y="59" font-family="monospace" font-size="5.5" fill="#00ff41">$ va-claw install</text>
+                        <text x="18" y="69" font-family="monospace" font-size="5" fill="#a855f7">✓ identity injected</text>
+                        <text x="18" y="79" font-family="monospace" font-size="5" fill="#a855f7">✓ memory online</text>
+                        <!-- Magic sparkles coming from screen -->
+                        <text x="15" y="110" font-family="monospace" font-size="14" fill="#ffff00">✨</text>
+                        <text x="85" y="120" font-family="monospace" font-size="14" fill="#a855f7">✨</text>
+                        <text x="155" y="105" font-family="monospace" font-size="14" fill="#00ffff">✨</text>
+                        <!-- Arrow transformation -->
+                        <text x="100" y="108" font-family="monospace" font-size="20" fill="#00ff41" text-anchor="middle">⚡</text>
+                        <!-- Caption -->
+                        <text x="100" y="140" font-family="monospace" font-size="5" fill="#00ff41" text-anchor="middle">ONE COMMAND.</text>
+                        <text x="100" y="150" font-family="monospace" font-size="5" fill="#00ffff" text-anchor="middle">30 SECONDS.</text>
+                        <text x="100" y="158" font-family="monospace" font-size="4" fill="#a855f7" text-anchor="middle">EVERYTHING CHANGES.</text>
+                    </svg>
+                </div>
+
+                <!-- PANEL 3: The OpenClaw -->
+                <div class="comic-panel pixel-border-violet">
+                    <div class="panel-num" style="color:var(--violet)">03</div>
+                    <svg viewBox="0 0 200 160" xmlns="http://www.w3.org/2000/svg" class="panel-svg">
+                        <rect width="200" height="160" fill="#0a0a0f"/>
+                        <!-- Glow backdrop for claw -->
+                        <ellipse cx="100" cy="85" rx="65" ry="55" fill="#1a0030" opacity="0.8"/>
+                        <!-- Big pixel lobster / claw mascot -->
+                        <!-- Body -->
+                        <rect x="75" y="65" width="50" height="35" rx="4" fill="#ff4400" stroke="#ff6b35" stroke-width="1.5"/>
+                        <!-- Shell segments -->
+                        <line x1="75" y1="76" x2="125" y2="76" stroke="#cc3300" stroke-width="1"/>
+                        <line x1="75" y1="87" x2="125" y2="87" stroke="#cc3300" stroke-width="1"/>
+                        <!-- Eyes -->
+                        <circle cx="88" cy="60" r="6" fill="#ff4400" stroke="#ff6b35" stroke-width="1"/>
+                        <circle cx="112" cy="60" r="6" fill="#ff4400" stroke="#ff6b35" stroke-width="1"/>
+                        <circle cx="88" cy="60" r="3" fill="#00ff41"/>
+                        <circle cx="112" cy="60" r="3" fill="#00ff41"/>
+                        <circle cx="89" cy="59" r="1" fill="#000"/>
+                        <circle cx="113" cy="59" r="1" fill="#000"/>
+                        <!-- Antennae -->
+                        <line x1="88" y1="54" x2="72" y2="35" stroke="#ff6b35" stroke-width="1.5"/>
+                        <line x1="112" y1="54" x2="128" y2="35" stroke="#ff6b35" stroke-width="1.5"/>
+                        <circle cx="72" cy="35" r="2" fill="#ffff00"/>
+                        <circle cx="128" cy="35" r="2" fill="#ffff00"/>
+                        <!-- Left big claw -->
+                        <rect x="35" y="68" width="40" height="18" rx="3" fill="#ff4400" stroke="#ff6b35" stroke-width="1.5"/>
+                        <rect x="30" y="63" width="18" height="12" rx="2" fill="#ff4400" stroke="#ff6b35" stroke-width="1"/>
+                        <rect x="30" y="77" width="18" height="12" rx="2" fill="#cc3300" stroke="#ff6b35" stroke-width="1"/>
+                        <!-- Right big claw -->
+                        <rect x="125" y="68" width="40" height="18" rx="3" fill="#ff4400" stroke="#ff6b35" stroke-width="1.5"/>
+                        <rect x="152" y="63" width="18" height="12" rx="2" fill="#ff4400" stroke="#ff6b35" stroke-width="1"/>
+                        <rect x="152" y="77" width="18" height="12" rx="2" fill="#cc3300" stroke="#ff6b35" stroke-width="1"/>
+                        <!-- Legs -->
+                        <line x1="85" y1="100" x2="78" y2="118" stroke="#ff4400" stroke-width="2"/>
+                        <line x1="93" y1="100" x2="88" y2="120" stroke="#ff4400" stroke-width="2"/>
+                        <line x1="107" y1="100" x2="112" y2="120" stroke="#ff4400" stroke-width="2"/>
+                        <line x1="115" y1="100" x2="122" y2="118" stroke="#ff4400" stroke-width="2"/>
+                        <!-- Memory chip on back -->
+                        <rect x="86" y="68" width="28" height="16" rx="2" fill="#a855f7" stroke="#cc77ff" stroke-width="1"/>
+                        <text x="100" y="79" font-family="monospace" font-size="5" fill="#fff" text-anchor="middle">MEM</text>
+                        <!-- Status badges floating -->
+                        <rect x="12" y="20" width="42" height="14" rx="2" fill="#003300" stroke="#00ff41" stroke-width="1"/>
+                        <text x="33" y="30" font-family="monospace" font-size="4" fill="#00ff41" text-anchor="middle">🧠 MEMORY</text>
+                        <rect x="146" y="20" width="44" height="14" rx="2" fill="#1a0030" stroke="#a855f7" stroke-width="1"/>
+                        <text x="168" y="30" font-family="monospace" font-size="4" fill="#a855f7" text-anchor="middle">⏰ LOOP</text>
+                        <rect x="74" y="125" width="52" height="14" rx="2" fill="#001a1a" stroke="#00ffff" stroke-width="1"/>
+                        <text x="100" y="135" font-family="monospace" font-size="4" fill="#00ffff" text-anchor="middle">🎭 IDENTITY</text>
+                        <!-- Caption -->
+                        <text x="100" y="153" font-family="monospace" font-size="5" fill="#ff6b35" text-anchor="middle">YOUR CLAUDE CODE</text>
+                        <text x="100" y="161" font-family="monospace" font-size="5" fill="#ff4400" text-anchor="middle">IS NOW AN OPENCLAW 🦞</text>
+                    </svg>
+                </div>
+
+                <!-- PANEL 4: Multi-claw fleet -->
+                <div class="comic-panel pixel-border-green">
+                    <div class="panel-num" style="color:var(--green)">04</div>
+                    <svg viewBox="0 0 200 160" xmlns="http://www.w3.org/2000/svg" class="panel-svg">
+                        <rect width="200" height="160" fill="#0a0a0f"/>
+                        <!-- Three small claws working in parallel -->
+                        <!-- Claw 1 -->
+                        <g transform="translate(10, 30) scale(0.5)">
+                            <rect x="50" y="40" width="40" height="28" rx="4" fill="#ff4400" stroke="#ff6b35" stroke-width="2"/>
+                            <circle cx="62" cy="35" r="5" fill="#ff4400" stroke="#ff6b35" stroke-width="1.5"/>
+                            <circle cx="78" cy="35" r="5" fill="#ff4400" stroke="#ff6b35" stroke-width="1.5"/>
+                            <circle cx="62" cy="35" r="2.5" fill="#00ff41"/>
+                            <circle cx="78" cy="35" r="2.5" fill="#00ff41"/>
+                            <rect x="30" y="44" width="22" height="14" rx="3" fill="#ff4400" stroke="#ff6b35" stroke-width="1.5"/>
+                            <rect x="88" y="44" width="22" height="14" rx="3" fill="#ff4400" stroke="#ff6b35" stroke-width="1.5"/>
+                            <rect x="60" y="43" width="20" height="13" rx="1" fill="#a855f7" stroke="#cc77ff" stroke-width="1"/>
+                        </g>
+                        <!-- Claw 2 -->
+                        <g transform="translate(75, 20) scale(0.5)">
+                            <rect x="50" y="40" width="40" height="28" rx="4" fill="#ff4400" stroke="#ff6b35" stroke-width="2"/>
+                            <circle cx="62" cy="35" r="5" fill="#ff4400" stroke="#ff6b35" stroke-width="1.5"/>
+                            <circle cx="78" cy="35" r="5" fill="#ff4400" stroke="#ff6b35" stroke-width="1.5"/>
+                            <circle cx="62" cy="35" r="2.5" fill="#00ff41"/>
+                            <circle cx="78" cy="35" r="2.5" fill="#00ff41"/>
+                            <rect x="30" y="44" width="22" height="14" rx="3" fill="#ff4400" stroke="#ff6b35" stroke-width="1.5"/>
+                            <rect x="88" y="44" width="22" height="14" rx="3" fill="#ff4400" stroke="#ff6b35" stroke-width="1.5"/>
+                            <rect x="60" y="43" width="20" height="13" rx="1" fill="#a855f7" stroke="#cc77ff" stroke-width="1"/>
+                        </g>
+                        <!-- Claw 3 -->
+                        <g transform="translate(140, 30) scale(0.5)">
+                            <rect x="50" y="40" width="40" height="28" rx="4" fill="#ff4400" stroke="#ff6b35" stroke-width="2"/>
+                            <circle cx="62" cy="35" r="5" fill="#ff4400" stroke="#ff6b35" stroke-width="1.5"/>
+                            <circle cx="78" cy="35" r="5" fill="#ff4400" stroke="#ff6b35" stroke-width="1.5"/>
+                            <circle cx="62" cy="35" r="2.5" fill="#00ff41"/>
+                            <circle cx="78" cy="35" r="2.5" fill="#00ff41"/>
+                            <rect x="30" y="44" width="22" height="14" rx="3" fill="#ff4400" stroke="#ff6b35" stroke-width="1.5"/>
+                            <rect x="88" y="44" width="22" height="14" rx="3" fill="#ff4400" stroke="#ff6b35" stroke-width="1.5"/>
+                            <rect x="60" y="43" width="20" height="13" rx="1" fill="#a855f7" stroke="#cc77ff" stroke-width="1"/>
+                        </g>
+                        <!-- Work bubbles -->
+                        <rect x="5" y="80" width="55" height="22" rx="2" fill="#001a00" stroke="#00ff41" stroke-width="1"/>
+                        <text x="32" y="89" font-family="monospace" font-size="4" fill="#00ff41" text-anchor="middle">reviewing PR</text>
+                        <text x="32" y="98" font-family="monospace" font-size="4" fill="#666" text-anchor="middle">claw-1 🦞</text>
+                        <rect x="73" y="68" width="55" height="22" rx="2" fill="#001a1a" stroke="#00ffff" stroke-width="1"/>
+                        <text x="100" y="77" font-family="monospace" font-size="4" fill="#00ffff" text-anchor="middle">writing tests</text>
+                        <text x="100" y="86" font-family="monospace" font-size="4" fill="#666" text-anchor="middle">claw-2 🦞</text>
+                        <rect x="140" y="80" width="55" height="22" rx="2" fill="#1a0030" stroke="#a855f7" stroke-width="1"/>
+                        <text x="167" y="89" font-family="monospace" font-size="4" fill="#a855f7" text-anchor="middle">monitoring</text>
+                        <text x="167" y="98" font-family="monospace" font-size="4" fill="#666" text-anchor="middle">claw-3 🦞</text>
+                        <!-- Shared memory hub -->
+                        <rect x="70" y="108" width="60" height="20" rx="3" fill="#1a001a" stroke="#ff00ff" stroke-width="1.5"/>
+                        <text x="100" y="118" font-family="monospace" font-size="4" fill="#ff00ff" text-anchor="middle">SHARED MEMORY</text>
+                        <text x="100" y="125" font-family="monospace" font-size="3.5" fill="#a855f7" text-anchor="middle">~/.va-claw/memory.db</text>
+                        <!-- Connection lines -->
+                        <line x1="32" y1="103" x2="90" y2="108" stroke="#00ff41" stroke-width="0.8" opacity="0.6" stroke-dasharray="3,2"/>
+                        <line x1="100" y1="90" x2="100" y2="108" stroke="#00ffff" stroke-width="0.8" opacity="0.6" stroke-dasharray="3,2"/>
+                        <line x1="167" y1="103" x2="110" y2="108" stroke="#a855f7" stroke-width="0.8" opacity="0.6" stroke-dasharray="3,2"/>
+                        <!-- Caption -->
+                        <text x="100" y="146" font-family="monospace" font-size="4.5" fill="#ffff00" text-anchor="middle">SPAWN A FLEET.</text>
+                        <text x="100" y="156" font-family="monospace" font-size="4.5" fill="#00ff41" text-anchor="middle">ONE MEMORY. INFINITE CLAWS.</text>
+                    </svg>
+                </div>
+
             </div>
         </section>
 
