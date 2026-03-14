@@ -1,4 +1,4 @@
-import { deepEqual, equal } from "node:assert/strict";
+import assert from "node:assert/strict";
 import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -34,8 +34,8 @@ test("installSkill followed by listSkills returns the new skill", async () => {
     await installSkill(SAMPLE_SKILL, "my-skill");
     const skills = await listSkills();
 
-    equal(skills.length, 1);
-    equal(skills[0]?.name, "my-skill");
+    assert.equal(skills.length, 1);
+    assert.equal(skills[0]?.name, "my-skill");
   } finally {
     resetSkillPathOverridesForTests();
     await rm(homeDir, { recursive: true, force: true });
@@ -52,10 +52,10 @@ test("loadSkill parses frontmatter and content", async () => {
     const skillPath = await installSkill(SAMPLE_SKILL, "my-skill");
     const skill = await loadSkill(skillPath);
 
-    equal(skill.description, "What this skill does");
-    equal(skill.version, "1.0.0");
-    deepEqual(skill.triggers, ["keyword1", "keyword2"]);
-    equal(skill.content, "# Skill Content\nInstructions here...");
+    assert.equal(skill.description, "What this skill does");
+    assert.equal(skill.version, "1.0.0");
+    assert.deepEqual(skill.triggers, ["keyword1", "keyword2"]);
+    assert.equal(skill.content, "# Skill Content\nInstructions here...");
   } finally {
     resetSkillPathOverridesForTests();
     await rm(homeDir, { recursive: true, force: true });
@@ -72,8 +72,8 @@ test("searchSkills matches keywords from triggers and description", async () => 
     await installSkill(SAMPLE_SKILL, "my-skill");
     const results = await searchSkills("Need keyword2 support");
 
-    equal(results.length, 1);
-    equal(results[0]?.name, "my-skill");
+    assert.equal(results.length, 1);
+    assert.equal(results[0]?.name, "my-skill");
   } finally {
     resetSkillPathOverridesForTests();
     await rm(homeDir, { recursive: true, force: true });
@@ -91,7 +91,7 @@ test("removeSkill removes an installed skill from listSkills", async () => {
     await removeSkill("my-skill");
     const skills = await listSkills();
 
-    equal(skills.length, 0);
+    assert.equal(skills.length, 0);
   } finally {
     resetSkillPathOverridesForTests();
     await rm(homeDir, { recursive: true, force: true });
@@ -115,7 +115,7 @@ test("listSkills prefers project skills over installed skills with the same name
     );
     const [skill] = await listSkills();
 
-    equal(skill?.content, "# Skill Content\nProject instructions");
+    assert.equal(skill?.content, "# Skill Content\nProject instructions");
   } finally {
     resetSkillPathOverridesForTests();
     await rm(homeDir, { recursive: true, force: true });
@@ -155,7 +155,7 @@ test("injectSkillIntoPrompt returns only skill block when basePrompt is empty", 
 
   const result = injectSkillIntoPrompt(skill, "");
 
-  equal(result, "[Skill: test-skill@2.0.0]\nTest skill content.");
+  assert.equal(result, "[Skill: test-skill@2.0.0]\nTest skill content.");
 });
 
 test("searchSkills is case-insensitive", async () => {
@@ -171,10 +171,10 @@ test("searchSkills is case-insensitive", async () => {
     const results2 = await searchSkills("KeyWord2");
     const results3 = await searchSkills("WHAT THIS SKILL DOES");
 
-    equal(results1.length, 1);
-    equal(results2.length, 1);
-    equal(results3.length, 1);
-    equal(results1[0]?.name, "my-skill");
+    assert.equal(results1.length, 1);
+    assert.equal(results2.length, 1);
+    assert.equal(results3.length, 1);
+    assert.equal(results1[0]?.name, "my-skill");
   } finally {
     resetSkillPathOverridesForTests();
     await rm(homeDir, { recursive: true, force: true });
@@ -211,7 +211,7 @@ Updated content.
     const path2 = await installSkill(updatedSkill, "my-skill");
 
     // Verify path is the same
-    equal(path1, path2);
+    assert.equal(path1, path2);
 
     // Verify content is updated
     const fileContent = await readFile(path2, "utf8");
@@ -220,9 +220,9 @@ Updated content.
 
     // Verify list shows updated skill
     const skills = await listSkills();
-    equal(skills.length, 1);
-    equal(skills[0]?.version, "2.0.0");
-    equal(skills[0]?.content, "Updated content.");
+    assert.equal(skills.length, 1);
+    assert.equal(skills[0]?.version, "2.0.0");
+    assert.equal(skills[0]?.content, "Updated content.");
   } finally {
     resetSkillPathOverridesForTests();
     await rm(homeDir, { recursive: true, force: true });
