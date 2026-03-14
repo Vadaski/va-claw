@@ -1,4 +1,4 @@
-import { spawn } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 
 import type { LarkCliResult } from "./types.js";
 
@@ -23,20 +23,35 @@ export function parseCliCommand(input?: string): { args: string[]; command: stri
   return { args, command };
 }
 
+export function resolveVaClawCliCommand(): string {
+  const result = spawnSync("which", [DEFAULT_CLI_COMMAND], { encoding: "utf8" });
+  const resolved = typeof result.stdout === "string" ? result.stdout.trim() : "";
+  return result.status === 0 && resolved !== "" ? resolved : DEFAULT_CLI_COMMAND;
+}
+
 export async function runLarkCli(
   prompt: string,
   cliCommand?: string,
   timeoutMs = 60_000,
   deps: CliDeps = {},
 ): Promise<LarkCliResult> {
+  return runLarkCliCommand([prompt], cliCommand, timeoutMs, deps);
+}
+
+export async function runLarkCliCommand(
+  promptArgs: string[],
+  cliCommand?: string,
+  timeoutMs = 60_000,
+  deps: CliDeps = {},
+): Promise<LarkCliResult> {
   const { args, command } = parseCliCommand(cliCommand);
-  const child = (deps.spawnProcess ?? spawn)(command, [...args, prompt], {
+  const child = (deps.spawnProcess ?? spawn)(command, [...args, ...promptArgs], {
     cwd: process.cwd(),
     env: {
       ...process.env,
       CLAUDECODE: undefined,
       CLAUDE_CODE_SESSION: undefined,
-      VA_CLAW_CHANNEL_MESSAGE: prompt,
+      VA_CLAW_CHANNEL_MESSAGE: promptArgs.join(" "),
     },
     stdio: ["ignore", "pipe", "pipe"],
   }) as SpawnResult;

@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { parseCliCommand, runLarkCli } from "./cli.js";
+import { parseCliCommand, runLarkCli, runLarkCliCommand } from "./cli.js";
 
 test("parseCliCommand handles quoted lark runner args", () => {
   const parsed = parseCliCommand('node --input-type=module "./runner.mjs"');
@@ -16,4 +16,12 @@ test("runLarkCli returns stdout on success", async () => {
 
   assert.equal(result.type, "success");
   assert.equal((result as { type: "success"; text: string }).text, "hello lark");
+});
+
+test("runLarkCliCommand passes argv as separate arguments", async () => {
+  const command = 'node -e "console.log(process.argv.slice(1).join(\'|\'))"';
+  const result = await runLarkCliCommand(["memory", "list"], command);
+
+  assert.equal(result.type, "success");
+  assert.equal((result as { type: "success"; text: string }).text, "memory|list");
 });

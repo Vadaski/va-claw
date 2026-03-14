@@ -2,6 +2,7 @@ export type StartLarkChannelConfig = {
   appId: string;
   appSecret: string;
   cliCommand?: string;
+  notifyChatId?: string;
 };
 
 export type LarkIncomingMessage = {

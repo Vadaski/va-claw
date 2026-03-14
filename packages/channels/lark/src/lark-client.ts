@@ -27,23 +27,56 @@ type WsClientWithLifecycle = {
   stop?: () => Promise<void> | void;
 };
 
+type MessageClient = {
+  im: {
+    message: {
+      create(args: {
+        params: { receive_id_type: string };
+        data: { receive_id: string; content: string; msg_type: string };
+      }): Promise<FeishuApiResponse>;
+      reply(args: {
+        path: { message_id: string };
+        data: { content: string; msg_type: string };
+      }): Promise<FeishuApiResponse>;
+    };
+  };
+};
+
+type LarkClientDeps = {
+  createClient: (config: StartLarkChannelConfig) => MessageClient;
+  createDispatcher: () => { register(mapping: Record<string, (data: unknown) => Promise<void>>): void };
+  createWsClient: (config: StartLarkChannelConfig) => WsClientWithLifecycle;
+  clearTimeoutFn: typeof clearTimeout;
+  setTimeoutFn: typeof setTimeout;
+};
+
+let larkClientDeps: LarkClientDeps = {
+  createClient: createSdkClient,
+  createDispatcher: () => new lark.EventDispatcher({}),
+  createWsClient: (config) =>
+    new lark.WSClient({
+      appId: config.appId,
+      appSecret: config.appSecret,
+      autoReconnect: true,
+      loggerLevel: lark.LoggerLevel.warn,
+    }) as WsClientWithLifecycle,
+  clearTimeoutFn: clearTimeout,
+  setTimeoutFn: setTimeout,
+};
+
+const RECENT_MESSAGE_TTL_MS = 60_000;
+
 export function createLarkListener(
   config: StartLarkChannelConfig,
   handler: LarkMessageHandler,
 ): LarkListener {
-  const client = new lark.Client({
-    appId: config.appId,
-    appSecret: config.appSecret,
-    appType: lark.AppType.SelfBuild,
-    domain: lark.Domain.Feishu,
-  });
-
-  const wsClient = new lark.WSClient({
-    appId: config.appId,
-    appSecret: config.appSecret,
-    autoReconnect: true,
-    loggerLevel: lark.LoggerLevel.warn,
-  }) as WsClientWithLifecycle;
+  const client = larkClientDeps.createClient(config);
+  const wsClient = larkClientDeps.createWsClient(config);
+  const deduper = createRecentMessageDeduper(
+    RECENT_MESSAGE_TTL_MS,
+    larkClientDeps.setTimeoutFn,
+    larkClientDeps.clearTimeoutFn,
+  );
 
   return {
     async reply(messageId, text) {
@@ -76,13 +109,17 @@ export function createLarkListener(
       }
     },
     start() {
-      const dispatcher = new lark.EventDispatcher({});
+      const dispatcher = larkClientDeps.createDispatcher();
       dispatcher.register({
         "im.message.receive_v1": async (data: unknown) => {
           const message = parseLarkEvent(data as FeishuEventData);
           if (!message) {
             return;
           }
+          if (deduper.has(message.messageId)) {
+            return;
+          }
+          deduper.add(message.messageId);
           await handler(message);
         },
       });
@@ -91,6 +128,76 @@ export function createLarkListener(
     async stop() {
       await wsClient.stop?.();
     },
+  };
+}
+
+export async function sendLarkMessage(
+  config: StartLarkChannelConfig,
+  chatId: string,
+  text: string,
+): Promise<boolean> {
+  const client = larkClientDeps.createClient(config);
+  try {
+    const res = await client.im.message.create({
+      params: { receive_id_type: "chat_id" },
+      data: {
+        receive_id: chatId,
+        content: JSON.stringify({ text }),
+        msg_type: "text",
+      },
+    });
+    return (res as FeishuApiResponse).code === 0;
+  } catch {
+    return false;
+  }
+}
+
+export function createRecentMessageDeduper(
+  ttlMs: number,
+  setTimeoutFn: typeof setTimeout = setTimeout,
+  clearTimeoutFn: typeof clearTimeout = clearTimeout,
+): { add(messageId: string): void; has(messageId: string): boolean } {
+  const seen = new Set<string>();
+  const timers = new Map<string, ReturnType<typeof setTimeout>>();
+
+  return {
+    add(messageId) {
+      const existingTimer = timers.get(messageId);
+      if (existingTimer) {
+        clearTimeoutFn(existingTimer);
+      }
+      seen.add(messageId);
+      timers.set(
+        messageId,
+        setTimeoutFn(() => {
+          seen.delete(messageId);
+          timers.delete(messageId);
+        }, ttlMs),
+      );
+    },
+    has(messageId) {
+      return seen.has(messageId);
+    },
+  };
+}
+
+export function setLarkClientDepsForTests(deps: Partial<LarkClientDeps>): void {
+  larkClientDeps = { ...larkClientDeps, ...deps };
+}
+
+export function resetLarkClientDepsForTests(): void {
+  larkClientDeps = {
+    createClient: createSdkClient,
+    createDispatcher: () => new lark.EventDispatcher({}),
+    createWsClient: (config) =>
+      new lark.WSClient({
+        appId: config.appId,
+        appSecret: config.appSecret,
+        autoReconnect: true,
+        loggerLevel: lark.LoggerLevel.warn,
+      }) as WsClientWithLifecycle,
+    clearTimeoutFn: clearTimeout,
+    setTimeoutFn: setTimeout,
   };
 }
 
@@ -128,4 +235,13 @@ export function parseLarkEvent(data: FeishuEventData): LarkIncomingMessage | nul
     rawContent: message.content,
     timestamp: message.create_time,
   };
+}
+
+function createSdkClient(config: StartLarkChannelConfig): MessageClient {
+  return new lark.Client({
+    appId: config.appId,
+    appSecret: config.appSecret,
+    appType: lark.AppType.SelfBuild,
+    domain: lark.Domain.Feishu,
+  }) as MessageClient;
 }

@@ -10,6 +10,7 @@
     "test": "pnpm run build && node --test dist/*.test.js"
   },
   "dependencies": {
+    "@va-claw/channels": "workspace:*",
     "@va-claw/skills": "workspace:*",
     "croner": "file:../../vendor/croner"
   },

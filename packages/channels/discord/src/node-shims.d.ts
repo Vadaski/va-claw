@@ -1,4 +1,9 @@
 declare module "node:assert/strict" {
+  const assert: {
+    equal<T>(actual: T, expected: T, message?: string): void;
+    match(actual: string, expected: RegExp, message?: string): void;
+  };
+  export default assert;
   export function equal<T>(actual: T, expected: T, message?: string): void;
   export function match(actual: string, expected: RegExp, message?: string): void;
 }

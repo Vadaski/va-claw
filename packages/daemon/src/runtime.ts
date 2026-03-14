@@ -3,6 +3,8 @@ import { Cron } from "croner";
 import type { DaemonStatus, DiscordRuntimeStatus, VaClawConfig } from "./types.js";
 import { runWakeCycle } from "./wake-cycle.js";
 
+type WakeOptions = NonNullable<Parameters<typeof runWakeCycle>[1]>;
+
 type SchedulerHandle = { stop(): void };
 type DiscordStarter = {
   status(): DiscordRuntimeStatus;
@@ -15,7 +17,7 @@ type RuntimeDeps = {
     clientId: string;
     cliCommand?: string;
   }) => Promise<DiscordStarter>;
-  wake: (config: VaClawConfig) => Promise<Date | null>;
+  wake: (config: VaClawConfig, deps?: WakeOptions) => Promise<Date | null>;
 };
 
 const runtimeState: {
@@ -48,7 +50,10 @@ let runtimeDeps: RuntimeDeps = {
   wake: runWakeCycle,
 };
 
-export async function startDaemon(config: VaClawConfig): Promise<void> {
+export async function startDaemon(
+  config: VaClawConfig,
+  options: { wakeDeps?: WakeOptions } = {},
+): Promise<void> {
   await stopDaemon();
   runtimeState.wakeCount = 0;
   runtimeState.lastWakeAt = undefined;
@@ -61,7 +66,7 @@ export async function startDaemon(config: VaClawConfig): Promise<void> {
     });
   }
   runtimeState.job = runtimeDeps.createScheduler(config.loopInterval, async () => {
-    const wokeAt = await runtimeDeps.wake(config);
+    const wokeAt = await runtimeDeps.wake(config, options.wakeDeps);
     if (!wokeAt) {
       return;
     }

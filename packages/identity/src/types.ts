@@ -20,6 +20,7 @@ export type LarkConfig = {
   appId: string;
   appSecret: string;
   cliCommand: string;
+  notifyChatId?: string;
 };
 
 export type ChannelConfig = {

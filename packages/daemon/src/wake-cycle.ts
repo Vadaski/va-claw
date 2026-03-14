@@ -35,6 +35,7 @@ type WakeDeps = {
   ) => Promise<WakeProcessResult>;
   injectSkill?: typeof injectSkillIntoPrompt;
   listSkills?: typeof listSkills;
+  notifyLark?: (chatId: string, text: string) => Promise<boolean>;
   storeMemory?: typeof store;
   warn?: (message: string) => void;
   now?: () => Date;
@@ -124,6 +125,13 @@ async function _runWakeCycleInner(
       identity: config.name,
       wokeAt: finishedAt.toISOString(),
     });
+    const notifyChatId = config.channels.lark.notifyChatId?.trim() ?? "";
+    if (notifyChatId !== "") {
+      const summary = result.stdout.slice(0, 1_000);
+      void Promise.resolve(deps.notifyLark?.(notifyChatId, summary)).catch((error: unknown) => {
+        (deps.warn ?? DEFAULT_WARN)(`[va-claw/daemon] lark notify failed: ${String(error)}`);
+      });
+    }
     await writeWakeLogSafe(
       {
         ts: startedAt.toISOString(),

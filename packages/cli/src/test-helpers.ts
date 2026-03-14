@@ -33,6 +33,7 @@ export const TEST_CONFIG: VaClawConfig = {
       appId: "",
       appSecret: "",
       cliCommand: "",
+      notifyChatId: "",
     },
   },
 };
@@ -45,8 +46,8 @@ export function createTestDeps(overrides: Partial<CliDeps> = {}): CliDeps & { ou
       return true;
     },
   };
-  const base = createDefaultCliDeps();
-  return {
+  const base = createDefaultCliDeps() as CliDeps;
+  const deps: CliDeps & { output: () => string } = {
     ...base,
     claudePath: "/tmp/claude.md",
     codexPath: "/tmp/instructions.md",
@@ -108,4 +109,5 @@ export function createTestDeps(overrides: Partial<CliDeps> = {}): CliDeps & { ou
     ...overrides,
     output: () => output,
   };
+  return deps;
 }

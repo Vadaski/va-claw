@@ -1,0 +1,26 @@
+export {
+  createLarkListener,
+  createLarkMessageHandler,
+  createRecentMessageDeduper,
+  formatLarkReply,
+  parseCliCommand,
+  parseLarkEvent,
+  parseLarkPrompt,
+  resetLarkClientDepsForTests,
+  resetLarkMessageDepsForTests,
+  resolveVaClawCommand,
+  runLarkCli,
+  runLarkCliCommand,
+  sendLarkMessage,
+  setLarkClientDepsForTests,
+  setLarkMessageDepsForTests,
+  startLarkChannel,
+  stopLarkChannel,
+} from "../lark/dist/index.js";
+export type {
+  LarkChannel,
+  LarkCliResult,
+  LarkIncomingMessage,
+  LarkListener,
+  StartLarkChannelConfig,
+} from "../lark/dist/index.js";

@@ -120,6 +120,49 @@ test("wake-cycle CLI output is written to memory with correct metadata", async (
   assert.equal(metadata.wokeAt, "2026-03-12T12:30:00.000Z");
 });
 
+test("wake-cycle pushes a truncated summary to configured lark chat without blocking", async () => {
+  let notifiedChatId = "";
+  let notifiedText = "";
+  let notifyCalled = false;
+
+  const wokeAt = await runWakeCycle(
+    {
+      ...TEST_CONFIG,
+      channels: {
+        ...TEST_CONFIG.channels,
+        lark: {
+          ...TEST_CONFIG.channels.lark,
+          notifyChatId: "oc_notify",
+        },
+      },
+    },
+    {
+      detect: async () => ({ name: "codex", command: "codex", args: ["exec"] }),
+      listSkills: async () => [],
+      executeWake: async () => ({
+        exitCode: 0,
+        stdout: "x".repeat(1_200),
+        stderr: "",
+        combinedOutput: "x".repeat(1_200),
+      }),
+      storeMemory: async () => "memory-id",
+      notifyLark: async (chatId, text) => {
+        notifyCalled = true;
+        notifiedChatId = chatId;
+        notifiedText = text;
+        return await new Promise<boolean>(() => {});
+      },
+      writeWakeLog: async () => {},
+      now: () => new Date("2026-03-12T12:31:00.000Z"),
+    },
+  );
+
+  assert.equal(wokeAt?.toISOString(), "2026-03-12T12:31:00.000Z");
+  assert.equal(notifyCalled, true);
+  assert.equal(notifiedChatId, "oc_notify");
+  assert.equal(notifiedText.length, 1_000);
+});
+
 test("wake-cycle returns null and does not write memory when CLI exits non-zero", async () => {
   let storeCalled = false;
   let logEntry: Record<string, unknown> | null = null;

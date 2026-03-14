@@ -45,6 +45,10 @@ import {
 } from "./channel-handlers.js";
 import type { CliDeps, InstallTarget } from "./types.js";
 
+type TelegramSetupOptions = { cliCommand?: string; token?: string };
+type LarkSetupOptions = { appId?: string; appSecret?: string; cliCommand?: string; notifyChatId?: string };
+type SlackSetupOptions = { appToken?: string; botToken?: string; cliCommand?: string };
+
 export function createCliProgram(deps: CliDeps = createDefaultCliDeps()): Command {
   const program = new Command("va-claw");
   program.description("va-claw CLI");
@@ -146,7 +150,7 @@ export function createCliProgram(deps: CliDeps = createDefaultCliDeps()): Comman
     .description("Configure Telegram bot credentials.")
     .option("--token <token>", "Telegram bot token")
     .option("--cli-command <command>", "CLI command to invoke for each message")
-    .action(async (options: { cliCommand?: string; token?: string }) =>
+    .action(async (options: TelegramSetupOptions) =>
       runTelegramSetup(options.token, options.cliCommand, deps),
     );
   telegram.command("start").description("Start the Telegram channel in the foreground.").action(async () => runTelegramStart(deps));
@@ -158,8 +162,9 @@ export function createCliProgram(deps: CliDeps = createDefaultCliDeps()): Comman
     .option("--app-id <id>", "Lark app ID")
     .option("--app-secret <secret>", "Lark app secret")
     .option("--cli-command <command>", "CLI command to invoke for each message")
-    .action(async (options: { appId?: string; appSecret?: string; cliCommand?: string }) =>
-      runLarkSetup(options.appId, options.appSecret, options.cliCommand, deps),
+    .option("--notify-chat-id <id>", "Lark chat ID to receive wake notifications")
+    .action(async (options: LarkSetupOptions) =>
+      runLarkSetup(options.appId, options.appSecret, options.cliCommand, options.notifyChatId, deps),
     );
   lark.command("start").description("Start the Lark channel in the foreground.").action(async () => runLarkStart(deps));
   lark.command("status").description("Show Lark channel status.").action(async () => runLarkStatus(deps));
@@ -170,7 +175,7 @@ export function createCliProgram(deps: CliDeps = createDefaultCliDeps()): Comman
     .option("--bot-token <token>", "Slack bot token")
     .option("--app-token <token>", "Slack app token")
     .option("--cli-command <command>", "CLI command to invoke for each message")
-    .action(async (options: { appToken?: string; botToken?: string; cliCommand?: string }) =>
+    .action(async (options: SlackSetupOptions) =>
       runSlackSetup(options.botToken, options.appToken, options.cliCommand, deps),
     );
   slack.command("start").description("Start the Slack channel in the foreground.").action(async () => runSlackStart(deps));

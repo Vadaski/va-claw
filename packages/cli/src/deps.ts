@@ -8,7 +8,7 @@ import {
   loadIdentity,
   runInstallWizard,
   saveIdentity,
-  startDaemon,
+  startDaemon as startDaemonProcess,
   stopDaemon,
   toClaudeMdSnippet,
   toCodexSystemPrompt,
@@ -28,6 +28,7 @@ import {
   forget,
 } from "@va-claw/memory";
 import { installSkill, listSkills, loadSkill, removeSkill } from "../../skills/dist/index.js";
+import type { VaClawConfig } from "@va-claw/daemon";
 
 import {
   fileExists,
@@ -40,6 +41,28 @@ import {
   wrapCodexPrompt,
 } from "./install-files.js";
 import type { CliDeps } from "./types.js";
+
+type ChannelModule = {
+  startSlackChannel(config: unknown): Promise<unknown>;
+  startLarkChannel(config: unknown): Promise<unknown>;
+  startTelegramChannel(config: unknown): Promise<unknown>;
+  stopLarkChannel(channel: unknown): Promise<void>;
+  stopSlackChannel(channel: unknown): Promise<void>;
+  stopTelegramChannel(channel: unknown): Promise<void>;
+};
+
+type LarkNotifierModule = {
+  sendLarkMessage(
+    config: {
+      appId: string;
+      appSecret: string;
+      notifyChatId?: string;
+      cliCommand?: string;
+    },
+    chatId: string,
+    text: string,
+  ): Promise<boolean>;
+};
 
 export function createDefaultCliDeps(): CliDeps {
   return {
@@ -64,7 +87,10 @@ export function createDefaultCliDeps(): CliDeps {
     toCodexSystemPrompt,
     installDaemonService,
     uninstallDaemonService,
-    startDaemon,
+    startDaemon: (config) =>
+      startDaemonProcess(config, {
+        wakeDeps: createWakeDeps(config),
+      }),
     stopDaemon,
     getDaemonStatus,
     memoryMemorize: (key, essence, options) => memorize(key, essence, options),
@@ -78,12 +104,18 @@ export function createDefaultCliDeps(): CliDeps {
     memorySearch: (query, limit) => search(query, limit),
     memoryList: (limit) => list(limit),
     memoryClear: () => clear(),
-    startTelegramChannel: (config) => loadChannelsModule().then((module) => module.startTelegramChannel(config)),
-    stopTelegramChannel: (channel) => loadChannelsModule().then((module) => module.stopTelegramChannel(channel)),
-    startLarkChannel: (config) => loadChannelsModule().then((module) => module.startLarkChannel(config)),
-    stopLarkChannel: (channel) => loadChannelsModule().then((module) => module.stopLarkChannel(channel)),
-    startSlackChannel: (config) => loadChannelsModule().then((module) => module.startSlackChannel(config)),
-    stopSlackChannel: (channel) => loadChannelsModule().then((module) => module.stopSlackChannel(channel)),
+    startTelegramChannel: (config) =>
+      loadChannelsModule().then((module) => module.startTelegramChannel(config) as ReturnType<CliDeps["startTelegramChannel"]>),
+    stopTelegramChannel: (channel) =>
+      loadChannelsModule().then((module) => module.stopTelegramChannel(channel) as ReturnType<CliDeps["stopTelegramChannel"]>),
+    startLarkChannel: (config) =>
+      loadChannelsModule().then((module) => module.startLarkChannel(config) as ReturnType<CliDeps["startLarkChannel"]>),
+    stopLarkChannel: (channel) =>
+      loadChannelsModule().then((module) => module.stopLarkChannel(channel) as ReturnType<CliDeps["stopLarkChannel"]>),
+    startSlackChannel: (config) =>
+      loadChannelsModule().then((module) => module.startSlackChannel(config) as ReturnType<CliDeps["startSlackChannel"]>),
+    stopSlackChannel: (channel) =>
+      loadChannelsModule().then((module) => module.stopSlackChannel(channel) as ReturnType<CliDeps["stopSlackChannel"]>),
     skillInstall: (content, name) => installSkill(content, name),
     skillList: (dir) => listSkills(dir),
     skillLoad: (nameOrPath) => loadSkill(nameOrPath),
@@ -114,21 +146,32 @@ async function askForValue(message: string, initialValue = ""): Promise<string> 
   }
 }
 
-async function loadChannelsModule(): Promise<{
-  startSlackChannel: CliDeps["startSlackChannel"];
-  startLarkChannel: CliDeps["startLarkChannel"];
-  startTelegramChannel: CliDeps["startTelegramChannel"];
-  stopLarkChannel: CliDeps["stopLarkChannel"];
-  stopSlackChannel: CliDeps["stopSlackChannel"];
-  stopTelegramChannel: CliDeps["stopTelegramChannel"];
-}> {
+async function loadChannelsModule(): Promise<ChannelModule> {
   const moduleUrl = new URL("../../channels/dist/index.js", import.meta.url);
-  return import(moduleUrl.href) as Promise<{
-    startSlackChannel: CliDeps["startSlackChannel"];
-    startLarkChannel: CliDeps["startLarkChannel"];
-    startTelegramChannel: CliDeps["startTelegramChannel"];
-    stopLarkChannel: CliDeps["stopLarkChannel"];
-    stopSlackChannel: CliDeps["stopSlackChannel"];
-    stopTelegramChannel: CliDeps["stopTelegramChannel"];
-  }>;
+  return import(moduleUrl.href) as Promise<ChannelModule>;
+}
+
+function createWakeDeps(config: VaClawConfig): {
+  notifyLark?: (chatId: string, text: string) => Promise<boolean>;
+} {
+  const notifyChatId = config.channels.lark.notifyChatId?.trim() ?? "";
+  if (
+    notifyChatId === ""
+    || config.channels.lark.appId.trim() === ""
+    || config.channels.lark.appSecret.trim() === ""
+  ) {
+    return {};
+  }
+
+  return {
+    notifyLark: async (chatId, text) => {
+      const larkModule = await loadLarkModule();
+      return larkModule.sendLarkMessage(config.channels.lark, chatId, text);
+    },
+  };
+}
+
+async function loadLarkModule(): Promise<LarkNotifierModule> {
+  const moduleUrl = new URL("../../channels/lark/dist/index.js", import.meta.url);
+  return import(moduleUrl.href) as Promise<LarkNotifierModule>;
 }

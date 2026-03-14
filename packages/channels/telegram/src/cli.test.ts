@@ -5,7 +5,7 @@ import { parseCliCommand, runTelegramCli } from "./cli.js";
 import type { TelegramCliResult } from "./types.js";
 
 const noopTimeout = ((_: Parameters<typeof setTimeout>[0] | null, _delay?: number) => {
-  return 0 as ReturnType<typeof setTimeout>;
+  return 0 as unknown as ReturnType<typeof setTimeout>;
 }) as typeof setTimeout;
 
 test("parseCliCommand splits quoted args", () => {
@@ -89,12 +89,12 @@ test("runTelegramCli returns timeout result when killed", async () => {
   let timeoutCalled = false;
   const result = await runTelegramCli("test prompt", undefined, 5000, {
     spawnProcess: () => mockChild as never,
-    setTimeoutFn: ((fn) => {
+    setTimeoutFn: ((fn: Parameters<typeof setTimeout>[0]) => {
       timeoutCalled = true;
       if (typeof fn === "function") {
         fn();
       }
-      return 0 as ReturnType<typeof setTimeout>;
+      return 0 as unknown as ReturnType<typeof setTimeout>;
     }) as typeof setTimeout,
   });
 
@@ -117,7 +117,7 @@ test("runTelegramCli returns error with exit code when no stderr", async () => {
   assert.equal(result.type, "error");
   assert.equal(
     (result as Extract<TelegramCliResult, { type: "error" }>).text,
-    "CLI exited with code 2"
+    "CLI exited with code 2",
   );
 });
 

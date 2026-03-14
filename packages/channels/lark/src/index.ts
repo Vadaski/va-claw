@@ -1,5 +1,19 @@
-import { createLarkListener, parseLarkEvent } from "./lark-client.js";
-import { createLarkMessageHandler, formatLarkReply, parseLarkPrompt } from "./message.js";
+import {
+  createLarkListener,
+  createRecentMessageDeduper,
+  parseLarkEvent,
+  resetLarkClientDepsForTests,
+  sendLarkMessage,
+  setLarkClientDepsForTests,
+} from "./lark-client.js";
+import {
+  createLarkMessageHandler,
+  formatLarkReply,
+  parseLarkPrompt,
+  resetLarkMessageDepsForTests,
+  resolveVaClawCommand,
+  setLarkMessageDepsForTests,
+} from "./message.js";
 import type { LarkChannel, LarkListener, StartLarkChannelConfig } from "./types.js";
 
 type LarkDeps = {
@@ -49,5 +63,18 @@ function validateLarkChannelConfig(config: StartLarkChannelConfig): void {
 }
 
 export type { LarkChannel, LarkCliResult, LarkIncomingMessage, LarkListener, StartLarkChannelConfig } from "./types.js";
-export { createLarkListener, createLarkMessageHandler, formatLarkReply, parseLarkEvent, parseLarkPrompt };
-export { parseCliCommand, runLarkCli } from "./cli.js";
+export {
+  createLarkListener,
+  createLarkMessageHandler,
+  createRecentMessageDeduper,
+  formatLarkReply,
+  parseLarkEvent,
+  parseLarkPrompt,
+  resetLarkClientDepsForTests,
+  resetLarkMessageDepsForTests,
+  resolveVaClawCommand,
+  sendLarkMessage,
+  setLarkClientDepsForTests,
+  setLarkMessageDepsForTests,
+};
+export { parseCliCommand, runLarkCli, runLarkCliCommand } from "./cli.js";

@@ -32,6 +32,7 @@ const DEFAULT_CONFIG: VaClawConfig = {
       appId: "",
       appSecret: "",
       cliCommand: "",
+      notifyChatId: "",
     },
   },
 };
@@ -96,6 +97,10 @@ export function normalizeConfig(input: unknown): VaClawConfig {
         cliCommand: pickString(
           Reflect.get(lark, "cliCommand"),
           base.channels.lark.cliCommand,
+        ),
+        notifyChatId: pickString(
+          Reflect.get(lark, "notifyChatId"),
+          base.channels.lark.notifyChatId ?? "",
         ),
       },
     },

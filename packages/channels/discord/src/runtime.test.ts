@@ -1,4 +1,4 @@
-import { equal, match } from "node:assert/strict";
+import assert from "node:assert/strict";
 import { afterEach, test } from "node:test";
 
 import { resetDiscordDepsForTests, setDiscordDepsForTests, startDiscordChannel } from "./runtime.js";
@@ -36,11 +36,11 @@ test("startDiscordChannel registers a Discord client and exposes connected statu
 
   const channel = await startDiscordChannel({ token: "token-1", clientId: "client-1" });
 
-  equal(loginToken, "token-1");
-  equal(channel.status(), "connected");
+  assert.equal(loginToken, "token-1");
+  assert.equal(channel.status(), "connected");
   await channel.stop();
-  equal(channel.status(), "disconnected");
-  equal(destroyed, true);
+  assert.equal(channel.status(), "disconnected");
+  assert.equal(destroyed, true);
 });
 
 test("Discord messages send placeholder and invoke CLI", async () => {
@@ -68,9 +68,9 @@ test("Discord messages send placeholder and invoke CLI", async () => {
   await startDiscordChannel({ token: "token-1", clientId: "client-1" });
   await client.dispatchMessage();
 
-  equal(edits[0], "正在思考...");
-  equal(edits[1], "discord reply");
-  match(prompts[0] ?? "", /hello from discord/);
+  assert.equal(edits[0], "正在思考...");
+  assert.equal(edits[1], "discord reply");
+  assert.match(prompts[0] ?? "", /hello from discord/);
 });
 
 function createMockClient(options: { message?: IncomingDiscordMessage } = {}): DiscordRuntimeClient & {
@@ -124,7 +124,7 @@ async function assertRejects(
   try {
     await fn();
   } catch (error) {
-    match(error instanceof Error ? error.message : String(error), pattern);
+    assert.match(error instanceof Error ? error.message : String(error), pattern);
     return;
   }
   throw new Error("Expected promise to reject.");

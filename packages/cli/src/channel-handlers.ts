@@ -81,6 +81,7 @@ export async function runLarkChannelSetup(
   appId: string | undefined,
   appSecret: string | undefined,
   cliCommand: string | undefined,
+  notifyChatId: string | undefined,
   deps: CliDeps,
 ): Promise<void> {
   const config = await deps.loadIdentity();
@@ -90,6 +91,7 @@ export async function runLarkChannelSetup(
       appId: appId ?? config.channels.lark.appId,
       appSecret: appSecret ?? config.channels.lark.appSecret,
       cliCommand: cliCommand ?? config.channels.lark.cliCommand,
+      notifyChatId: notifyChatId ?? config.channels.lark.notifyChatId,
     },
   });
   ensureLarkConfigured(next);
@@ -113,6 +115,7 @@ export async function runLarkChannelStatus(deps: CliDeps): Promise<void> {
   const configured = config.channels.lark.appId !== "" && config.channels.lark.appSecret !== "";
   writeLine(deps.stdout, `Lark configured: ${configured ? "yes" : "no"}`);
   writeLine(deps.stdout, `Lark CLI command: ${config.channels.lark.cliCommand || "va-claw"}`);
+  writeLine(deps.stdout, `Lark notify chat: ${config.channels.lark.notifyChatId || "(not set)"}`);
 }
 
 function ensureTelegramConfigured(config: VaClawConfig): void {
