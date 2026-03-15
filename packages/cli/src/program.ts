@@ -17,6 +17,8 @@ import {
   runMemoryRecall,
   runMemoryUpdate,
   runProtocol,
+  runSessionAppend,
+  runSessionRecall,
   runSkillAdd,
   runSkillList,
   runSkillRemove,
@@ -120,6 +122,17 @@ export function createCliProgram(deps: CliDeps = createDefaultCliDeps()): Comman
   memory.command("consolidate").description("Consolidate memory store.").action(async () => runMemoryConsolidate(deps));
   memory.command("reflect").description("Reflect memory map grouped by tags.").action(async () => runMemoryReflect(deps));
   memory.command("clear").description("Clear all memory entries.").action(async () => runMemoryClear(deps));
+
+  const session = program.command("session").description("Session journal operations.");
+  const sessionAppend = session.command("append");
+  sessionAppend.description("Append a summarized interaction entry.");
+  sessionAppend.option("--role <role>", "user | assistant");
+  sessionAppend.option("--summary <text>", "Summary text, max 200 chars.");
+  sessionAppend.action(async (options: { role?: string; summary?: string }) => runSessionAppend(options, deps));
+  const sessionRecall = session.command("recall");
+  sessionRecall.description("Show recent session entries.");
+  sessionRecall.option("--limit <limit>", "Number of entries to show.", "10");
+  sessionRecall.action(async (options: { limit?: string }) => runSessionRecall(options, deps));
 
   const skill = program.command("skill").description("Skill operations.");
   skill.command("list").description("List installed and project skills.").action(async () => runSkillList(deps));

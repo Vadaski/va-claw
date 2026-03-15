@@ -51,6 +51,7 @@ test("runWakeCycle injects matching skills into the wake prompt", async () => {
         path: "/tmp/coding-agent.md",
       },
     ],
+    readRecentSessionContext: async () => [],
     executeWake: async (_command, args = []) => {
       spawnArgs = [...args];
       return {
@@ -89,6 +90,7 @@ test("wake-cycle CLI output is written to memory with correct metadata", async (
   const wokeAt = await runWakeCycle(TEST_CONFIG, {
     detect: async () => ({ name: "codex", command: "codex", args: ["exec", "--full-auto"] }),
     listSkills: async () => [],
+    readRecentSessionContext: async () => [],
     executeWake: async () => ({
       exitCode: 0,
       stdout: cliOutput,
@@ -139,6 +141,7 @@ test("wake-cycle pushes a truncated summary to configured lark chat without bloc
     {
       detect: async () => ({ name: "codex", command: "codex", args: ["exec"] }),
       listSkills: async () => [],
+      readRecentSessionContext: async () => [],
       executeWake: async () => ({
         exitCode: 0,
         stdout: "x".repeat(1_200),
@@ -171,6 +174,7 @@ test("wake-cycle returns null and does not write memory when CLI exits non-zero"
   const wokeAt = await runWakeCycle(TEST_CONFIG, {
     detect: async () => ({ name: "claude", command: "claude", args: ["-p"] }),
     listSkills: async () => [],
+    readRecentSessionContext: async () => [],
     executeWake: async () => ({
       exitCode: 1,
       stdout: "",
@@ -193,8 +197,9 @@ test("wake-cycle returns null and does not write memory when CLI exits non-zero"
   assert.equal(warnings.length, 1);
   assert.equal(warnings[0]?.includes("wake failed"), true);
   const nonZeroLog = (logEntry ?? {}) as Record<string, unknown>;
-  assert.equal(nonZeroLog["exit_code"], 1);
-  assert.equal(nonZeroLog["output_tail"], "CLI execution failed");
+  assert.equal(nonZeroLog["exitCode"], 1);
+  assert.equal(nonZeroLog["timedOut"], false);
+  assert.equal(nonZeroLog["outputSnippet"], "CLI execution failed");
 });
 
 test("wake-cycle unsets CLAUDECODE and CLAUDE_CODE_SESSION in child env", async () => {
@@ -204,6 +209,7 @@ test("wake-cycle unsets CLAUDECODE and CLAUDE_CODE_SESSION in child env", async 
   await runWakeCycle(TEST_CONFIG, {
     detect: async () => ({ name: "codex", command: "codex", args: ["exec"] }),
     listSkills: async () => [],
+    readRecentSessionContext: async () => [],
     executeWake: async (_command, _args, options, timeoutMs) => {
       capturedEnv = options.env as Record<string, unknown>;
       capturedTimeoutMs = timeoutMs;
@@ -231,6 +237,7 @@ test("wake-cycle logs timeout without crashing the daemon", async () => {
   const wokeAt = await runWakeCycle(TEST_CONFIG, {
     detect: async () => ({ name: "codex", command: "codex", args: ["exec"] }),
     listSkills: async () => [],
+    readRecentSessionContext: async () => [],
     executeWake: async () => ({
       exitCode: "timeout",
       stdout: "partial output",
@@ -252,8 +259,9 @@ test("wake-cycle logs timeout without crashing the daemon", async () => {
 
   assert.equal(wokeAt, null);
   const timeoutLog = (logEntry ?? {}) as Record<string, unknown>;
-  assert.equal(timeoutLog["exit_code"], "timeout");
-  assert.equal(timeoutLog["duration_ms"], 150000);
+  assert.equal(timeoutLog["exitCode"], "timeout");
+  assert.equal(timeoutLog["timedOut"], true);
+  assert.equal(timeoutLog["durationMs"], 150000);
   assert.equal(warnings[0]?.includes("timed out"), true);
 });
 
@@ -264,6 +272,7 @@ test("wake-cycle logs crashes and returns null instead of throwing", async () =>
   const wokeAt = await runWakeCycle(TEST_CONFIG, {
     detect: async () => ({ name: "codex", command: "codex", args: ["exec"] }),
     listSkills: async () => [],
+    readRecentSessionContext: async () => [],
     executeWake: async () => ({
       exitCode: 0,
       stdout: "success",
@@ -288,8 +297,44 @@ test("wake-cycle logs crashes and returns null instead of throwing", async () =>
 
   assert.equal(wokeAt, null);
   const crashLog = (logEntry ?? {}) as Record<string, unknown>;
-  assert.equal(crashLog["exit_code"], "crash");
+  assert.equal(crashLog["exitCode"], "crash");
+  assert.equal(crashLog["timedOut"], false);
   assert.equal(warnings[0]?.includes("wake crashed"), true);
+});
+
+test("wake-cycle logs use the structured JSONL wake.log schema", async () => {
+  let logEntry: Record<string, unknown> | null = null;
+
+  await runWakeCycle(TEST_CONFIG, {
+    detect: async () => ({ name: "codex", command: "codex", args: ["exec"] }),
+    listSkills: async () => [],
+    executeWake: async () => ({
+      exitCode: 0,
+      stdout: "done",
+      stderr: "",
+      combinedOutput: "x".repeat(3_000),
+    }),
+    storeMemory: async () => "memory-id",
+    writeWakeLog: async (entry) => {
+      logEntry = entry as Record<string, unknown>;
+    },
+    now: (() => {
+      const timestamps = [
+        new Date("2026-03-12T14:00:00.000Z"),
+        new Date("2026-03-12T14:00:03.000Z"),
+      ];
+      return () => timestamps.shift() ?? new Date("2026-03-12T14:00:03.000Z");
+    })(),
+  });
+
+  const wakeLog = (logEntry ?? {}) as Record<string, unknown>;
+  assert.equal(wakeLog["timestamp"], "2026-03-12T14:00:00.000Z");
+  assert.equal(wakeLog["durationMs"], 3000);
+  assert.equal(wakeLog["exitCode"], 0);
+  assert.equal(wakeLog["timedOut"], false);
+  assert.equal(typeof wakeLog["outputSnippet"], "string");
+  assert.equal((wakeLog["outputSnippet"] as string).length, 2048);
+  assert.equal("taskId" in wakeLog, false);
 });
 
 test("wake-cycle serializes concurrent wakes: second call is skipped while first is running", async () => {
@@ -303,6 +348,7 @@ test("wake-cycle serializes concurrent wakes: second call is skipped while first
   const firstWakePromise = runWakeCycle(TEST_CONFIG, {
     detect: async () => ({ name: "codex", command: "codex", args: ["exec"] }),
     listSkills: async () => [],
+    readRecentSessionContext: async () => [],
     executeWake: async () => {
       executeCount += 1;
       await lockPromise; // block until we release
@@ -321,6 +367,7 @@ test("wake-cycle serializes concurrent wakes: second call is skipped while first
   const secondResult = await runWakeCycle(TEST_CONFIG, {
     detect: async () => ({ name: "codex", command: "codex", args: ["exec"] }),
     listSkills: async () => [],
+    readRecentSessionContext: async () => [],
     executeWake: async () => {
       executeCount += 1;
       return { exitCode: 0, stdout: "second", stderr: "", combinedOutput: "second" };
@@ -339,4 +386,48 @@ test("wake-cycle serializes concurrent wakes: second call is skipped while first
   const firstResult = await firstWakePromise;
   notEqual(firstResult, null);
   assert.equal(executeCount, 1); // second wake never ran
+});
+
+test("runWakeCycle prepends recent session context before the wake prompt", async () => {
+  let spawnArgs: string[] = [];
+
+  await runWakeCycle(TEST_CONFIG, {
+    detect: async () => ({ name: "codex", command: "codex", args: ["exec"] }),
+    listSkills: async () => [],
+    readRecentSessionContext: async () => [
+      {
+        timestamp: "2026-03-12T11:58:00.000Z",
+        role: "user",
+        summary: "Asked for a repo status summary",
+      },
+      {
+        timestamp: "2026-03-12T11:59:00.000Z",
+        role: "assistant",
+        summary: "Found one failing test in daemon wake-cycle",
+      },
+    ],
+    executeWake: async (_command, args = []) => {
+      spawnArgs = [...args];
+      return {
+        exitCode: 0,
+        stdout: "wake complete",
+        stderr: "",
+        combinedOutput: "wake complete",
+      };
+    },
+    storeMemory: async () => "memory-id",
+    writeWakeLog: async () => {},
+    now: () => new Date("2026-03-12T12:00:00.000Z"),
+  });
+
+  assert.equal(
+    spawnArgs[1],
+    [
+      "Recent session context:",
+      "- 2026-03-12T11:58:00.000Z user: Asked for a repo status summary",
+      "- 2026-03-12T11:59:00.000Z assistant: Found one failing test in daemon wake-cycle",
+      "",
+      "load coding context",
+    ].join("\n"),
+  );
 });

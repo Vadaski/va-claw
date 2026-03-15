@@ -15,7 +15,7 @@ import {
   updateClaw,
   validateClawStatus,
 } from "./claw-store.js";
-import type { CliDeps, InstallTarget } from "./types.js";
+import type { CliDeps, InstallTarget, SessionJournalEntry, SessionRole } from "./types.js";
 import { waitForStopSignal } from "./wait.js";
 
 const CLAW_FLEET_PROTOCOL_SKILL_URL =
@@ -200,6 +200,15 @@ export async function runProtocol(deps: CliDeps, textMode = false): Promise<void
     writeLine(deps.stdout, `memory.entries: ${report.memory.entries}`);
     writeLine(deps.stdout, `memory.lastWakeAt: ${report.memory.lastWakeAt ?? "never"}`);
     writeLine(deps.stdout, "");
+    writeLine(deps.stdout, "Recent session:");
+    if (report.session.recent.length === 0) {
+      writeLine(deps.stdout, "(none)");
+    } else {
+      for (const entry of report.session.recent) {
+        writeLine(deps.stdout, `- ${deps.formatSessionEntry(entry)}`);
+      }
+    }
+    writeLine(deps.stdout, "");
     writeLine(deps.stdout, "Claws:");
     writeLine(deps.stdout, formatClawDefinitions(report.claws));
     return;
@@ -221,6 +230,9 @@ async function buildProtocolReport(deps: CliDeps): Promise<{
     entries: number;
     lastWakeAt: string | null;
   };
+  session: {
+    recent: SessionJournalEntry[];
+  };
   claws: ClawDefinition[];
 }> {
   const runtime = await deps.getDaemonStatus();
@@ -229,6 +241,7 @@ async function buildProtocolReport(deps: CliDeps): Promise<{
   const runtimeLastWakeAt = runtime.lastWakeAt?.toISOString() ?? null;
   const fallbackLastWakeAt = await findLastWakeAt(deps.memoryDbPath, deps.fileExists);
   const memoryCount = await countMemoryEntries(deps.memoryDbPath, deps.fileExists);
+  const sessionRecent = await deps.readRecentSessionEntries(5);
   const claws = await listClaws(deps.clawRegistryPath);
 
   return {
@@ -244,6 +257,9 @@ async function buildProtocolReport(deps: CliDeps): Promise<{
     memory: {
       entries: memoryCount,
       lastWakeAt: runtimeLastWakeAt ?? fallbackLastWakeAt,
+    },
+    session: {
+      recent: sessionRecent,
     },
     claws: claws.map((claw) => ({
       name: claw.name,
@@ -361,6 +377,32 @@ export async function runMemoryClear(deps: CliDeps): Promise<void> {
   writeLine(deps.stdout, "Memory cleared.");
 }
 
+export async function runSessionAppend(
+  options: { role?: string; summary?: string },
+  deps: CliDeps,
+): Promise<void> {
+  const role = normalizeSessionRole(options.role);
+  const summary = options.summary?.trim() ?? "";
+  const entry = await deps.appendSessionEntry({ role, summary });
+  writeLine(deps.stdout, deps.formatSessionEntry(entry));
+}
+
+export async function runSessionRecall(
+  options: { limit?: string },
+  deps: CliDeps,
+): Promise<void> {
+  const parsedLimit = options.limit === undefined ? 10 : Number(options.limit);
+  const limit = Number.isFinite(parsedLimit) && parsedLimit > 0 ? Math.floor(parsedLimit) : 10;
+  const entries = await deps.readRecentSessionEntries(limit);
+  if (entries.length === 0) {
+    writeLine(deps.stdout, "No session entries.");
+    return;
+  }
+  for (const entry of entries) {
+    writeLine(deps.stdout, deps.formatSessionEntry(entry));
+  }
+}
+
 export async function runDiscordSetup(deps: CliDeps): Promise<void> {
   const config = await deps.loadIdentity();
   const token = await deps.prompt("Discord Bot Token", config.channels.discord.token);
@@ -476,4 +518,11 @@ function splitCommaList(value: string): string[] {
     .split(",")
     .map((part) => part.trim())
     .filter((part) => part.length > 0);
+}
+
+function normalizeSessionRole(role: string | undefined): SessionRole {
+  if (role === "user" || role === "assistant") {
+    return role;
+  }
+  throw new Error("Session role must be 'user' or 'assistant'.");
 }

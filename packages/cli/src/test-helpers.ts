@@ -53,6 +53,7 @@ export function createTestDeps(overrides: Partial<CliDeps> = {}): CliDeps & { ou
     codexPath: "/tmp/instructions.md",
     configPath: "/tmp/config.json",
     memoryDbPath: "/tmp/memory.db",
+    sessionJournalPath: "/tmp/session-journal.jsonl",
     clawRegistryPath: "/tmp/claws.json",
     platform: "linux",
     spawnSync: overrides.spawnSync ?? ((command, args, options) => spawnSync(command, args, options)),
@@ -80,6 +81,13 @@ export function createTestDeps(overrides: Partial<CliDeps> = {}): CliDeps & { ou
     memoryCount: overrides.memoryCount ?? (async () => 0),
     memoryList: overrides.memoryList ?? (async () => [] satisfies MemoryEntry[]),
     memoryClear: overrides.memoryClear ?? (async () => {}),
+    appendSessionEntry: overrides.appendSessionEntry ?? (async ({ role, summary, timestamp }) => ({
+      timestamp: timestamp ?? "2026-03-12T00:00:00.000Z",
+      role,
+      summary,
+    })),
+    readRecentSessionEntries: overrides.readRecentSessionEntries ?? (async () => []),
+    formatSessionEntry: overrides.formatSessionEntry ?? ((entry) => `[${entry.timestamp}] ${entry.role}: ${entry.summary}`),
     startTelegramChannel:
       overrides.startTelegramChannel ??
       (async () => ({ bot: {} as never, cliCommand: "va-claw", token: "" })),

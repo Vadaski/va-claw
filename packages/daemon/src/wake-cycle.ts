@@ -5,15 +5,18 @@ import { dirname, resolve } from "node:path";
 
 import { store } from "../../memory/dist/index.js";
 import { injectSkillIntoPrompt, listSkills, matchesSkillQuery } from "../../skills/dist/index.js";
+import { formatRecentSessionContext, readRecentSessionContext } from "./session-journal.js";
 import type { VaClawConfig } from "./types.js";
 import { detectCliAdapter } from "./cli-adapter.js";
 
 type WakeExitCode = number | "crash" | "spawn_error" | "timeout";
 type WakeLogEntry = {
-  ts: string;
-  duration_ms: number;
-  exit_code: WakeExitCode;
-  output_tail: string;
+  timestamp: string;
+  taskId?: string;
+  durationMs: number;
+  exitCode: WakeExitCode;
+  timedOut: boolean;
+  outputSnippet: string;
 };
 type WakeProcessOptions = {
   cwd: string;
@@ -36,6 +39,7 @@ type WakeDeps = {
   injectSkill?: typeof injectSkillIntoPrompt;
   listSkills?: typeof listSkills;
   notifyLark?: (chatId: string, text: string) => Promise<boolean>;
+  readRecentSessionContext?: typeof readRecentSessionContext;
   storeMemory?: typeof store;
   warn?: (message: string) => void;
   now?: () => Date;
@@ -44,7 +48,7 @@ type WakeDeps = {
 
 const DEFAULT_WARN = (message: string) => console.warn(message);
 const DEFAULT_WAKE_TIMEOUT_MS = 300_000;
-const OUTPUT_TAIL_LIMIT = 2_000;
+const OUTPUT_SNIPPET_LIMIT = 2_048;
 const OUTPUT_BUFFER_LIMIT = 10 * 1024 * 1024; // 10 MB, same as old spawnSync maxBuffer
 
 let wakeRunning = false;
@@ -103,10 +107,11 @@ async function _runWakeCycleInner(
     if (result.exitCode !== 0) {
       await writeWakeLogSafe(
         {
-          ts: startedAt.toISOString(),
-          duration_ms: Math.max(0, durationMs),
-          exit_code: result.exitCode,
-          output_tail: tailOutput(result.combinedOutput),
+          timestamp: startedAt.toISOString(),
+          durationMs: Math.max(0, durationMs),
+          exitCode: result.exitCode,
+          timedOut: result.exitCode === "timeout",
+          outputSnippet: tailOutput(result.combinedOutput),
         },
         deps,
       );
@@ -134,10 +139,11 @@ async function _runWakeCycleInner(
     }
     await writeWakeLogSafe(
       {
-        ts: startedAt.toISOString(),
-        duration_ms: Math.max(0, durationMs),
-        exit_code: 0,
-        output_tail: tailOutput(result.combinedOutput),
+        timestamp: startedAt.toISOString(),
+        durationMs: Math.max(0, durationMs),
+        exitCode: 0,
+        timedOut: false,
+        outputSnippet: tailOutput(result.combinedOutput),
       },
       deps,
     );
@@ -146,10 +152,11 @@ async function _runWakeCycleInner(
     const failedAt = now();
     await writeWakeLogSafe(
       {
-        ts: startedAt.toISOString(),
-        duration_ms: Math.max(0, failedAt.getTime() - startedAt.getTime()),
-        exit_code: "crash",
-        output_tail: tailOutput(combinedOutput),
+        timestamp: startedAt.toISOString(),
+        durationMs: Math.max(0, failedAt.getTime() - startedAt.getTime()),
+        exitCode: "crash",
+        timedOut: false,
+        outputSnippet: tailOutput(combinedOutput),
       },
       deps,
     );
@@ -289,7 +296,7 @@ function resolveWakeTimeoutMs(config: VaClawConfig): number {
     : DEFAULT_WAKE_TIMEOUT_MS;
 }
 
-function tailOutput(text: string, limit = OUTPUT_TAIL_LIMIT): string {
+function tailOutput(text: string, limit = OUTPUT_SNIPPET_LIMIT): string {
   return text.length <= limit ? text : text.slice(-limit);
 }
 
@@ -308,9 +315,10 @@ async function writeWakeLog(entry: WakeLogEntry): Promise<void> {
 }
 
 async function resolveWakePrompt(config: VaClawConfig, deps: WakeDeps): Promise<string> {
+  let basePrompt = config.wakePrompt;
   try {
     const skills = await (deps.listSkills ?? listSkills)();
-    return skills
+    basePrompt = skills
       .filter((skill) => matchesSkillQuery(skill, config.wakePrompt))
       .reduce(
         (prompt, skill) => (deps.injectSkill ?? injectSkillIntoPrompt)(skill, prompt),
@@ -318,6 +326,17 @@ async function resolveWakePrompt(config: VaClawConfig, deps: WakeDeps): Promise<
       );
   } catch (error) {
     (deps.warn ?? DEFAULT_WARN)(`[va-claw/daemon] skill injection skipped: ${String(error)}`);
-    return config.wakePrompt;
+  }
+
+  try {
+    const recent = await (deps.readRecentSessionContext ?? readRecentSessionContext)({
+      limit: 10,
+      maxChars: 2_000,
+    });
+    const contextBlock = formatRecentSessionContext(recent);
+    return contextBlock === "" ? basePrompt : `${contextBlock}\n${basePrompt}`;
+  } catch (error) {
+    (deps.warn ?? DEFAULT_WARN)(`[va-claw/daemon] session context skipped: ${String(error)}`);
+    return basePrompt;
   }
 }

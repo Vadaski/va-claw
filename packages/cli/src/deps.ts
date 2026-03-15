@@ -2,10 +2,14 @@ import { spawnSync } from "node:child_process";
 import { readFile } from "node:fs/promises";
 import { createInterface } from "node:readline/promises";
 import {
+  appendSessionJournalEntry,
   DEFAULT_CONFIG_PATH,
+  formatSessionJournalEntry,
   getDaemonStatus,
   installDaemonService,
   loadIdentity,
+  readRecentSessionContext,
+  resolveSessionJournalPath,
   runInstallWizard,
   saveIdentity,
   startDaemon as startDaemonProcess,
@@ -65,11 +69,13 @@ type LarkNotifierModule = {
 };
 
 export function createDefaultCliDeps(): CliDeps {
+  const sessionJournalPath = resolveSessionJournalPath();
   return {
     claudePath: resolveClaudeMdPath(),
     codexPath: resolveCodexInstructionsPath(),
     configPath: DEFAULT_CONFIG_PATH,
     memoryDbPath: resolveMemoryDbPath(),
+    sessionJournalPath,
     clawRegistryPath: resolveClawRegistryPath(),
     platform: process.platform,
     spawnSync,
@@ -104,6 +110,9 @@ export function createDefaultCliDeps(): CliDeps {
     memorySearch: (query, limit) => search(query, limit),
     memoryList: (limit) => list(limit),
     memoryClear: () => clear(),
+    appendSessionEntry: (entry) => appendSessionJournalEntry(entry, sessionJournalPath),
+    readRecentSessionEntries: (limit, maxChars) => readRecentSessionContext({ limit, maxChars }, sessionJournalPath),
+    formatSessionEntry: formatSessionJournalEntry,
     startTelegramChannel: (config) =>
       loadChannelsModule().then((module) => module.startTelegramChannel(config) as ReturnType<CliDeps["startTelegramChannel"]>),
     stopTelegramChannel: (channel) =>

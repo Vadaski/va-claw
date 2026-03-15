@@ -21,6 +21,8 @@ test("registers top-level and memory commands", () => {
   ok(/\bmemory consolidate\b/.test(help));
   ok(/\bmemory reflect\b/.test(help));
   ok(/\bmemory clear\b/.test(help));
+  ok(/\bsession append\b/.test(help));
+  ok(/\bsession recall\b/.test(help));
   ok(/\bskill list\b/.test(help));
   ok(/\bskill add\b/.test(help));
   ok(/\bclaw status\b/.test(help));

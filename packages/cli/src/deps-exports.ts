@@ -6,4 +6,14 @@ export {
   toClaudeMdSnippet,
   toCodexSystemPrompt,
 } from "@va-claw/identity";
-export { getDaemonStatus, installDaemonService, startDaemon, stopDaemon, uninstallDaemonService } from "@va-claw/daemon";
+export {
+  appendSessionJournalEntry,
+  formatSessionJournalEntry,
+  getDaemonStatus,
+  installDaemonService,
+  readRecentSessionContext,
+  resolveSessionJournalPath,
+  startDaemon,
+  stopDaemon,
+  uninstallDaemonService,
+} from "@va-claw/daemon";

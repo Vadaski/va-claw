@@ -33,11 +33,20 @@ export type SpawnFn = (
   options?: { encoding: "utf8" },
 ) => SpawnResult;
 
+export type SessionRole = "user" | "assistant";
+
+export type SessionJournalEntry = {
+  timestamp: string;
+  role: SessionRole;
+  summary: string;
+};
+
 export type CliDeps = {
   claudePath: string;
   codexPath: string;
   configPath: string;
   memoryDbPath: string;
+  sessionJournalPath: string;
   clawRegistryPath: string;
   platform: NodeJS.Platform;
   spawnSync: SpawnFn;
@@ -87,6 +96,9 @@ export type CliDeps = {
   memoryCount: () => Promise<number>;
   memoryList: (limit: number) => Promise<MemoryEntry[]>;
   memoryClear: () => Promise<void>;
+  appendSessionEntry: (entry: { role: SessionRole; summary: string; timestamp?: string }) => Promise<SessionJournalEntry>;
+  readRecentSessionEntries: (limit: number, maxChars?: number) => Promise<SessionJournalEntry[]>;
+  formatSessionEntry: (entry: SessionJournalEntry) => string;
   startTelegramChannel: (config: StartTelegramChannelConfig) => Promise<TelegramChannel>;
   stopTelegramChannel: (channel: TelegramChannel) => Promise<void>;
   startLarkChannel: (config: StartLarkChannelConfig) => Promise<LarkChannel>;
