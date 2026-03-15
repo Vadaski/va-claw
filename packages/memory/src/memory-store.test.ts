@@ -392,7 +392,7 @@ test("recall supports cross-language semantic matches", async () => {
     details: "No authentication issues remained after rollout.",
   });
 
-  const entries = await store.recall("kimi 오류", 5);
+  const entries = await store.recall("kimi 오류", 5, { semantic: true });
   assert.equal(entries[0]?.key, "kimi-fix");
   store.close();
 });

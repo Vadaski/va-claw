@@ -1,7 +1,7 @@
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { MemoryStore } from "./memory-store.js";
-import type { MemoryEntry, MemoryMetadata, MemoryStoreOptions } from "./types.js";
+import type { MemoryEntry, MemoryMetadata, MemoryStoreOptions, RecallOptions } from "./types.js";
 
 let defaultStore: MemoryStore | null = null;
 
@@ -33,8 +33,8 @@ export async function forget(key: string): Promise<boolean> {
   return getDefaultStore().forget(key);
 }
 
-export async function recall(query: string, limit = 5): Promise<MemoryEntry[]> {
-  return getDefaultStore().recall(query, limit);
+export async function recall(query: string, limit = 5, options?: RecallOptions): Promise<MemoryEntry[]> {
+  return getDefaultStore().recall(query, limit, options);
 }
 
 export async function consolidate(): Promise<{

@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { buildSearchText, cosineSimilarity, createEmbedding, keywordTokens } from "./embedding.js";
 import { computeRetention, reinforceOnAccess } from "./forgetting-curve.js";
 import { SqliteMemoryDb } from "./sqlite.js";
-import type { MemoryEntry, MemoryMetadata, MemoryStoreOptions, StoredMemoryRow } from "./types.js";
+import type { MemoryEntry, MemoryMetadata, MemoryStoreOptions, RecallOptions, StoredMemoryRow } from "./types.js";
 
 const DAY_IN_MS = 86_400_000;
 const ONE_WEEK_IN_MS = 7 * DAY_IN_MS;
@@ -52,7 +52,7 @@ export class MemoryStore {
 
   constructor(options: MemoryStoreOptions = {}) {
     this.db = new SqliteMemoryDb(options);
-    this.embeddingEnabled = this.db.vectorAvailable;
+    this.embeddingEnabled = options.enableVectorSearch !== false;
   }
 
   async memorize(
@@ -90,7 +90,7 @@ export class MemoryStore {
       metadata: existingEntry?.metadata ? JSON.stringify(existingEntry.metadata) : null,
       created_at: existingEntry?.createdAt ?? now,
       search_text: searchText,
-      embedding: await this.createStoredEmbedding(searchText),
+      embedding: searchText === existing?.search_text ? existing.embedding : null,
       key,
       tags: JSON.stringify(tags),
       trigger_conditions: JSON.stringify(triggerConditions),
@@ -136,10 +136,7 @@ export class MemoryStore {
       trigger_conditions: JSON.stringify(normalizeStringArray(nextTriggerConditions)),
       importance: nextImportance,
       search_text: searchText,
-      embedding: await this.createStoredEmbedding(
-        searchText,
-        searchText === row.search_text ? row.embedding : null,
-      ),
+      embedding: searchText === row.search_text ? row.embedding : null,
       updated_at: nowString(),
     };
     this.db.upsertByKey(updated);
@@ -150,22 +147,23 @@ export class MemoryStore {
     return this.db.deleteByKey(key);
   }
 
-  async recall(query: string, limit = 5): Promise<MemoryEntry[]> {
+  async recall(query: string, limit = 5, options: RecallOptions = {}): Promise<MemoryEntry[]> {
     const safeLimit = Number.isFinite(limit) ? Math.max(0, Math.floor(limit)) : 5;
     const tokens = keywordTokens(query);
-    const queryEmbedding = await this.loadQueryEmbedding(query);
+    const queryEmbedding = options.semantic ? await this.loadQueryEmbedding(query) : null;
     if (tokens.length === 0 && !queryEmbedding) {
       return [];
     }
     const now = nowString();
-    const scoredRows = this.db.listAll().map((row) => {
+    const scoredRows: Array<RecallCandidate | undefined> = [];
+    for (const row of this.db.listAll()) {
       const entry = toMemoryEntry(row);
       const keywordScore = computeKeywordScore(entry, tokens);
-      const embeddingScore =
-        queryEmbedding && row.embedding ? cosineSimilarity(queryEmbedding, parseEmbedding(row.embedding)) : 0;
+      const embeddingScore = queryEmbedding ? await this.computeSemanticScore(queryEmbedding, row) : 0;
       const relevanceScore = keywordScore > 0 ? keywordScore : embeddingScore;
       if (relevanceScore <= 0) {
-        return undefined;
+        scoredRows.push(undefined);
+        continue;
       }
       const retention = computeRetention(
         entry.strength,
@@ -174,13 +172,13 @@ export class MemoryStore {
         entry.importance,
         entry.accessCount,
       );
-      return {
+      scoredRows.push({
         entry,
         keywordScore,
         retention,
         finalScore: relevanceScore * 0.7 + retention * 0.3,
-      };
-    });
+      });
+    }
     const scored = scoredRows
       .filter((candidate): candidate is RecallCandidate => candidate !== undefined)
       .sort((left, right) => right.finalScore - left.finalScore || right.retention - left.retention);
@@ -273,7 +271,7 @@ export class MemoryStore {
           last_accessed_at: nowIso,
           updated_at: nowIso,
           search_text: searchText,
-          embedding: await this.createStoredEmbedding(searchText, row.embedding),
+          embedding: searchText === row.search_text ? row.embedding : null,
         };
         this.db.upsertByKey(updated);
         survivors.push(toMemoryEntry(updated));
@@ -324,26 +322,6 @@ export class MemoryStore {
     if (safeTopK <= 0) {
       return [];
     }
-    if (query.trim().length === 0) {
-      return this.db.searchByKeywords(query, safeTopK).map((row) => toMemoryEntry(row));
-    }
-
-    const queryEmbedding = await this.loadQueryEmbedding(query);
-    if (queryEmbedding) {
-      const tokens = keywordTokens(query);
-      return this.db
-        .listAll()
-        .map((row) => {
-          const score = row.embedding
-            ? cosineSimilarity(queryEmbedding, parseEmbedding(row.embedding))
-            : computeKeywordScore(toMemoryEntry(row), tokens);
-          return { row, score };
-        })
-        .filter(({ score }) => score > 0)
-        .sort((left, right) => right.score - left.score || compareRows(left.row, right.row))
-        .slice(0, safeTopK)
-        .map(({ row }) => toMemoryEntry(row));
-    }
     return this.db.searchByKeywords(query, safeTopK).map((row) => toMemoryEntry(row));
   }
 
@@ -372,7 +350,7 @@ export class MemoryStore {
           ...row,
           metadata: serializedMetadata,
           search_text: searchText,
-          embedding: await this.createStoredEmbedding(searchText, row.embedding),
+          embedding: searchText === row.search_text ? row.embedding : null,
         });
       }
     }
@@ -402,6 +380,24 @@ export class MemoryStore {
       return null;
     }
     return loadQueryEmbedding(query);
+  }
+
+  private async computeSemanticScore(queryEmbedding: number[], row: StoredMemoryRow): Promise<number> {
+    const existingEmbedding = parseEmbedding(row.embedding);
+    if (existingEmbedding.length > 0) {
+      return cosineSimilarity(queryEmbedding, existingEmbedding);
+    }
+
+    const storedEmbedding = await this.createStoredEmbedding(row.search_text);
+    if (!storedEmbedding) {
+      return 0;
+    }
+
+    this.db.upsertByKey({
+      ...row,
+      embedding: storedEmbedding,
+    });
+    return cosineSimilarity(queryEmbedding, parseEmbedding(storedEmbedding));
   }
 }
 

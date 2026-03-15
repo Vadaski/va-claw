@@ -1,13 +1,10 @@
 import { ok } from "node:assert/strict";
 import test from "node:test";
-
-import { createCliProgram, runCli } from "./program.js";
+import { createCliProgram } from "./program.js";
 import { createTestDeps } from "./test-helpers.js";
-
 test("registers top-level and memory commands", () => {
   const program = createCliProgram(createTestDeps());
   const help = program.helpInformation();
-
   ok(/\binstall\b/.test(help));
   ok(/\bstart\b/.test(help));
   ok(/\bstatus\b/.test(help));
@@ -35,11 +32,4 @@ test("registers top-level and memory commands", () => {
   ok(/\bchannel discord start\b/.test(help));
   ok(/\bchannel telegram setup\b/.test(help));
   ok(/\bchannel slack status\b/.test(help));
-});
-
-test("memory recall help includes semantic flag", () => {
-  const deps = createTestDeps();
-  return runCli(["node", "va-claw", "memory", "recall", "--help"], deps).then(() => {
-    ok(/--semantic\b/.test(deps.output()));
-  });
 });

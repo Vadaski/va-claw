@@ -116,8 +116,14 @@ export function createCliProgram(deps: CliDeps = createDefaultCliDeps()): Comman
     .description("Recall memories by query.")
     .argument("<query>")
     .option("--limit <limit>", "Max results.")
-    .action((query: string, options: { limit?: string }) =>
-      runMemoryRecall(query, options.limit ? Number(options.limit) : 5, deps),
+    .option("--semantic", "Use local embedding-based semantic recall.")
+    .action((query: string, options: { limit?: string; semantic?: boolean }) =>
+      runMemoryRecall(
+        query,
+        options.limit ? Number(options.limit) : 5,
+        { semantic: Boolean(options.semantic) },
+        deps,
+      ),
     );
   memory.command("consolidate").description("Consolidate memory store.").action(async () => runMemoryConsolidate(deps));
   memory.command("reflect").description("Reflect memory map grouped by tags.").action(async () => runMemoryReflect(deps));
@@ -246,6 +252,10 @@ export function createCliProgram(deps: CliDeps = createDefaultCliDeps()): Comman
 }
 
 export async function runCli(argv: string[] = process.argv, deps?: CliDeps): Promise<void> {
+  if (isMemoryRecallHelpRequest(argv)) {
+    (deps ?? createDefaultCliDeps()).stdout.write(`${MEMORY_RECALL_HELP}\n`);
+    return;
+  }
   const program = createCliProgram(deps ?? createDefaultCliDeps());
   try {
     await program.parseAsync(argv);
@@ -254,4 +264,20 @@ export async function runCli(argv: string[] = process.argv, deps?: CliDeps): Pro
     (deps ?? createDefaultCliDeps()).stderr.write(`${message}\n`);
     process.exitCode = 1;
   }
+}
+
+const MEMORY_RECALL_HELP = [
+  "Usage: va-claw memory recall <query> [options]",
+  "",
+  "Recall memories by query.",
+  "",
+  "Options:",
+  "  --limit <limit>  Max results.",
+  "  --semantic      Use local embedding-based semantic recall.",
+].join("\n");
+
+function isMemoryRecallHelpRequest(argv: string[]): boolean {
+  return argv[2] === "memory"
+    && argv[3] === "recall"
+    && (argv.includes("--help") || argv.includes("-h"));
 }

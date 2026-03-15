@@ -291,7 +291,7 @@ va-claw identity show     # 查看当前配置
   "name": "Nova",
   "persona": "Precise and calm. Senior engineer mindset.",
   "systemPrompt": "Act with continuity. Check memory before starting.",
-  "wakePrompt": "Open the current repository and do a quick operator health pass: inspect git status, note any uncommitted changes, check the most recent CI/test signals, identify the highest-risk file touched recently, and leave a short summary with the next concrete action if attention is needed.",
+  "wakePrompt": "Open the current repository and act like a long-running developer operator. Run `git status --short` first so you know what changed. Run one fast repo-specific smoke test before doing anything else. Then write a concise operator summary covering what you inspected, what passed or failed, and the next concrete action. Finally, persist that summary with `va-claw session append --role assistant --summary \"repo checked, smoke test passed, next: review auth diff\"`.",
   "wakeTimeoutMs": 300000,
   "loopInterval": "0 * * * *"
 }
@@ -311,13 +311,13 @@ va-claw status     # 检查健康状态 + 最后唤醒时间
 
 ## 长期运行注意事项
 
-如果计划让 `va-claw` 持续运行数周或数月，请把唤醒循环当作一个常驻运营进程来对待：规划 token 预算，关注本地磁盘增长，在日志积累成噪音之前做好轮转。
+如果计划让 `va-claw` 持续运行数周或数月，请从一开始就把唤醒循环当作常驻运营进程来管理：控制 prompt 体积、约束存储增长、定期清理日志。
 
-**Token 预算估算：** 简单公式是 `每日唤醒次数 × 平均每次唤醒 token 数`。每小时唤醒是 `24次/天`；每 15 分钟唤醒是 `96次/天`。若 prompt + 工具输出平均 1.5k token，每小时循环大约消耗 `36k token/天`，15 分钟循环大约 `144k token/天`。建议从保守的频率开始，仅在唤醒输出持续有价值时才缩短间隔。
+**Token 预算：** `wakePrompt` 会随着 skill 注入和最近会话上下文而变长。建议基础 `wakePrompt` 控制在 `500` tokens 以内，避免 agent 还没开始工作就先消耗掉太多预算。
 
-**`memory.db` 增长：** `~/.va-claw/memory.db` 中的 SQLite 存储会随每次唤醒保存而增长。简短的仓库健康摘要每次约增长低个位数 KB；详细的调研或审查循环则增长更快。建议每月用 `du -h ~/.va-claw/memory.db` 检查大小，定期运行 `va-claw memory consolidate`，并避免在 wake prompt 中倾倒完整 diff 或长日志（除非你确实需要记住这些内容）。
+**`memory.db` 增长：** `~/.va-claw/memory.db` 对 SQLite 文件大小没有内建上限。建议至少每周运行一次 `va-claw memory consolidate`，或者直接配一个 `cron`，让陈旧条目定期收敛，避免数据库无限膨胀。
 
-**`wake.log` 轮转：** 每次唤醒都会向 `~/.va-claw/wake.log` 追加一行 JSON，包含时间戳、耗时、退出码和最后 2 KB 的合并输出。首次运行时自动创建该文件，之后使用系统工具轮转，避免无限增长。Linux 下的 `logrotate` 最简示例：
+**`wake.log` 轮转：** `~/.va-claw/wake.log` 是 append-only 的 JSONL。用系统日志工具做轮转，或者定期截断/归档，避免它长期积累成无限增长的诊断文件。Linux 下的 `logrotate` 最简示例：
 
 ```conf
 /home/you/.va-claw/wake.log {
@@ -329,7 +329,9 @@ va-claw status     # 检查健康状态 + 最后唤醒时间
 }
 ```
 
-在 macOS 上，通常可以用一条小的 `newsyslog.conf` 规则或定期执行 `mv ~/.va-claw/wake.log ~/.va-claw/wake.log.$(date +%F)` 来实现。核心原则很简单：保留最近几份日志文件，删除最旧的，不要让唤醒诊断日志无限增长。
+在 macOS 上，通常可以用一条小的 `newsyslog.conf` 规则或定期执行 `mv ~/.va-claw/wake.log ~/.va-claw/wake.log.$(date +%F)` 来实现。
+
+**`session-journal.jsonl` 增长：** 从 `v0.2.3` 开始，`~/.va-claw/session-journal.jsonl` 会以 append-only JSONL 记录 wake/session 摘要。建议按计划清理 `30` 天以前的条目，让最近上下文保持有用，同时避免 journal 无限增长。
 
 ---
 

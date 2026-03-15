@@ -24,6 +24,10 @@ export type MemoryStoreOptions = {
   vectorExtensionPath?: string;
 };
 
+export type RecallOptions = {
+  semantic?: boolean;
+};
+
 export type StoredMemoryRow = {
   id: string;
   key: string | null;

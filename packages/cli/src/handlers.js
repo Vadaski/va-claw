@@ -4,28 +4,22 @@ import {
   formatClawDefinitions,
   formatMemoryEntries,
   formatSkills,
-  writeLine,
+  writeLine
 } from "./output.js";
 import { detectServiceType, probeServiceRunning, stopInstalledService } from "./platform.js";
 import {
-  type ClawDefinition,
   listClaws,
   registerClaw,
   removeClaw,
   updateClaw,
-  validateClawStatus,
+  validateClawStatus
 } from "./claw-store.js";
-import type { CliDeps, InstallTarget, SessionJournalEntry, SessionRole } from "./types.js";
 import { waitForStopSignal } from "./wait.js";
-
-const CLAW_FLEET_PROTOCOL_SKILL_URL =
-  "https://raw.githubusercontent.com/Vadaski/va-claw/main/skills/claw-fleet-protocol.md";
-const MEMORY_SKILL_URL =
-  "https://raw.githubusercontent.com/Vadaski/va-claw/main/skills/memory-protocol.md";
-
-export async function runInstall(target: InstallTarget, deps: CliDeps): Promise<void> {
+const CLAW_FLEET_PROTOCOL_SKILL_URL = "https://raw.githubusercontent.com/Vadaski/va-claw/main/skills/claw-fleet-protocol.md";
+const MEMORY_SKILL_URL = "https://raw.githubusercontent.com/Vadaski/va-claw/main/skills/memory-protocol.md";
+async function runInstall(target, deps) {
   const installTarget = normalizeInstallTarget(target);
-  const config = (await deps.fileExists(deps.configPath)) ? await deps.loadIdentity() : await deps.runInstallWizard();
+  const config = await deps.fileExists(deps.configPath) ? await deps.loadIdentity() : await deps.runInstallWizard();
   const summary = [`Installed va-claw for ${installTarget}.`, `Config: ${deps.configPath}`];
   if (installTarget === "claude-code" || installTarget === "all") {
     await deps.upsertManagedBlock(deps.claudePath, deps.toClaudeMdSnippet(config), CLAUDE_MARKERS);
@@ -51,8 +45,7 @@ export async function runInstall(target: InstallTarget, deps: CliDeps): Promise<
     writeLine(deps.stdout, line);
   }
 }
-
-export async function runStart(deps: CliDeps): Promise<void> {
+async function runStart(deps) {
   const config = await deps.loadIdentity();
   await deps.startDaemon(config);
   writeLine(deps.stdout, "va-claw daemon started in foreground. Press Ctrl+C to stop.");
@@ -61,8 +54,7 @@ export async function runStart(deps: CliDeps): Promise<void> {
     writeLine(deps.stdout, "va-claw daemon stopped.");
   });
 }
-
-export async function runStop(deps: CliDeps): Promise<void> {
+async function runStop(deps) {
   await deps.stopDaemon();
   const serviceType = safeDetectServiceType(deps.platform);
   if (serviceType) {
@@ -70,77 +62,49 @@ export async function runStop(deps: CliDeps): Promise<void> {
   }
   writeLine(deps.stdout, "va-claw stop requested.");
 }
-
-export async function runStatus(deps: CliDeps): Promise<void> {
+async function runStatus(deps) {
   const runtime = await deps.getDaemonStatus();
   const serviceType = safeDetectServiceType(deps.platform);
   const serviceRunning = serviceType ? probeServiceRunning(serviceType, deps.spawnSync) : false;
-  const lastWakeAt = runtime.lastWakeAt?.toISOString() ?? (await findLastWakeAt(deps.memoryDbPath, deps.fileExists));
+  const lastWakeAt = runtime.lastWakeAt?.toISOString() ?? await findLastWakeAt(deps.memoryDbPath, deps.fileExists);
   const memoryCount = await countMemoryEntries(deps.memoryDbPath, deps.fileExists);
   writeLine(deps.stdout, `Daemon: ${runtime.running || serviceRunning ? "running" : "stopped"}`);
   writeLine(deps.stdout, `Discord: ${runtime.discord}`);
   writeLine(deps.stdout, `Last wake: ${lastWakeAt ?? "never"}`);
   writeLine(deps.stdout, `Memory entries: ${memoryCount}`);
 }
-
-export async function runClawStatus(deps: CliDeps): Promise<void> {
+async function runClawStatus(deps) {
   const clawStatus = await buildProtocolReport(deps);
   writeLine(deps.stdout, formatClawDefinitions(clawStatus.claws));
   writeLine(
     deps.stdout,
-    `Daemon running: ${clawStatus.runtime.running ? "yes" : "no"} | service: ${clawStatus.runtime.serviceRunning ? "running" : "stopped"} | wakeCount: ${clawStatus.runtime.wakeCount}`,
+    `Daemon running: ${clawStatus.runtime.running ? "yes" : "no"} | service: ${clawStatus.runtime.serviceRunning ? "running" : "stopped"} | wakeCount: ${clawStatus.runtime.wakeCount}`
   );
 }
-
-export async function runClawList(deps: CliDeps): Promise<void> {
+async function runClawList(deps) {
   const claws = await listClaws(deps.clawRegistryPath);
   writeLine(deps.stdout, formatClawDefinitions(claws));
 }
-
-export async function runClawAdd(
-  name: string,
-  options: {
-    goal?: string;
-    status?: string;
-    cliCommand?: string;
-    note?: string;
-    tags?: string;
-  },
-  deps: CliDeps,
-): Promise<void> {
+async function runClawAdd(name, options, deps) {
   const normalizedName = name.trim();
   if (normalizedName === "") {
     throw new Error("Claw name cannot be empty.");
   }
-  const status = options.status
-    ? validateClawStatus(options.status)
-    : null;
+  const status = options.status ? validateClawStatus(options.status) : null;
   if (options.status && status === null) {
     throw new Error(`Invalid claw status: ${options.status}`);
   }
   const claw = await registerClaw(deps.clawRegistryPath, {
     name: normalizedName,
     goal: options.goal,
-    status: status ?? undefined,
+    status: status ?? void 0,
     cliCommand: options.cliCommand,
     note: options.note,
-    tags: options.tags ? splitCommaList(options.tags) : [],
+    tags: options.tags ? splitCommaList(options.tags) : []
   });
   writeLine(deps.stdout, formatClawDefinitions([claw]));
 }
-
-export async function runClawUpdate(
-  name: string,
-  options: {
-    goal?: string;
-    status?: string;
-    cliCommand?: string;
-    note?: string;
-    tags?: string;
-    seen?: string;
-  },
-  deps: CliDeps,
-): Promise<void> {
+async function runClawUpdate(name, options, deps) {
   const status = options.status ? validateClawStatus(options.status) : null;
   const normalizedName = name.trim();
   if (normalizedName === "") {
@@ -151,11 +115,11 @@ export async function runClawUpdate(
   }
   const patch = {
     goal: options.goal,
-    status: status ?? undefined,
+    status: status ?? void 0,
     cliCommand: options.cliCommand,
     note: options.note,
-    tags: options.tags ? splitCommaList(options.tags) : undefined,
-    seen: options.seen === "1" || options.seen === "true" || options.seen === "yes",
+    tags: options.tags ? splitCommaList(options.tags) : void 0,
+    seen: options.seen === "1" || options.seen === "true" || options.seen === "yes"
   };
   const claw = await updateClaw(deps.clawRegistryPath, normalizedName, patch);
   if (!claw) {
@@ -164,8 +128,7 @@ export async function runClawUpdate(
   }
   writeLine(deps.stdout, formatClawDefinitions([claw]));
 }
-
-export async function runClawRemove(name: string, deps: CliDeps): Promise<void> {
+async function runClawRemove(name, deps) {
   const normalizedName = name.trim();
   if (normalizedName === "") {
     throw new Error("Claw name cannot be empty.");
@@ -173,8 +136,7 @@ export async function runClawRemove(name: string, deps: CliDeps): Promise<void> 
   const removed = await removeClaw(deps.clawRegistryPath, normalizedName);
   writeLine(deps.stdout, removed ? `Removed claw: ${normalizedName}` : `Claw not found: ${normalizedName}`);
 }
-
-export async function runClawHeartbeat(name: string, deps: CliDeps): Promise<void> {
+async function runClawHeartbeat(name, deps) {
   const normalizedName = name.trim();
   if (normalizedName === "") {
     throw new Error("Claw name cannot be empty.");
@@ -186,8 +148,7 @@ export async function runClawHeartbeat(name: string, deps: CliDeps): Promise<voi
   }
   writeLine(deps.stdout, formatClawDefinitions([claw]));
 }
-
-export async function runProtocol(deps: CliDeps, textMode = false): Promise<void> {
+async function runProtocol(deps, textMode = false) {
   const report = await buildProtocolReport(deps);
   if (textMode) {
     writeLine(deps.stdout, `protocol: ${report.protocol}`);
@@ -215,26 +176,7 @@ export async function runProtocol(deps: CliDeps, textMode = false): Promise<void
   }
   writeLine(deps.stdout, JSON.stringify(report, null, 2));
 }
-
-async function buildProtocolReport(deps: CliDeps): Promise<{
-  protocol: string;
-  timestamp: string;
-  runtime: {
-    running: boolean;
-    serviceRunning: boolean;
-    discord: string;
-    wakeCount: number;
-    lastWakeAt: string | null;
-  };
-  memory: {
-    entries: number;
-    lastWakeAt: string | null;
-  };
-  session: {
-    recent: SessionJournalEntry[];
-  };
-  claws: ClawDefinition[];
-}> {
+async function buildProtocolReport(deps) {
   const runtime = await deps.getDaemonStatus();
   const serviceType = safeDetectServiceType(deps.platform);
   const serviceRunning = serviceType ? probeServiceRunning(serviceType, deps.spawnSync) : false;
@@ -243,23 +185,22 @@ async function buildProtocolReport(deps: CliDeps): Promise<{
   const memoryCount = await countMemoryEntries(deps.memoryDbPath, deps.fileExists);
   const sessionRecent = await deps.readRecentSessionEntries(5);
   const claws = await listClaws(deps.clawRegistryPath);
-
   return {
     protocol: "va-claw-claw-protocol-1",
-    timestamp: new Date().toISOString(),
+    timestamp: (/* @__PURE__ */ new Date()).toISOString(),
     runtime: {
       running: runtime.running,
       serviceRunning,
       discord: runtime.discord,
       wakeCount: runtime.wakeCount,
-      lastWakeAt: runtimeLastWakeAt ?? fallbackLastWakeAt,
+      lastWakeAt: runtimeLastWakeAt ?? fallbackLastWakeAt
     },
     memory: {
       entries: memoryCount,
-      lastWakeAt: runtimeLastWakeAt ?? fallbackLastWakeAt,
+      lastWakeAt: runtimeLastWakeAt ?? fallbackLastWakeAt
     },
     session: {
-      recent: sessionRecent,
+      recent: sessionRecent
     },
     claws: claws.map((claw) => ({
       name: claw.name,
@@ -270,20 +211,17 @@ async function buildProtocolReport(deps: CliDeps): Promise<{
       tags: claw.tags,
       lastSeenAt: claw.lastSeenAt,
       createdAt: claw.createdAt,
-      updatedAt: claw.updatedAt,
-    })),
+      updatedAt: claw.updatedAt
+    }))
   };
 }
-
-async function installFleetProtocolSkill(deps: CliDeps): Promise<string | null> {
+async function installFleetProtocolSkill(deps) {
   return installRemoteSkill(deps, CLAW_FLEET_PROTOCOL_SKILL_URL, "claw-fleet-protocol");
 }
-
-async function installMemoryProtocolSkill(deps: CliDeps): Promise<string | null> {
+async function installMemoryProtocolSkill(deps) {
   return installRemoteSkill(deps, MEMORY_SKILL_URL, "memory-protocol");
 }
-
-async function installRemoteSkill(deps: CliDeps, url: string, name: string): Promise<string | null> {
+async function installRemoteSkill(deps, url, name) {
   try {
     const response = await fetch(url);
     if (!response.ok) {
@@ -295,33 +233,22 @@ async function installRemoteSkill(deps: CliDeps, url: string, name: string): Pro
     return null;
   }
 }
-
-export async function runMemorySearch(query: string, deps: CliDeps): Promise<void> {
+async function runMemorySearch(query, deps) {
   writeLine(deps.stdout, formatMemoryEntries(await deps.memorySearch(query, 10)));
 }
-
-export async function runMemoryList(deps: CliDeps): Promise<void> {
+async function runMemoryList(deps) {
   writeLine(deps.stdout, formatMemoryEntries(await deps.memoryList(20)));
 }
-
-export async function runMemoryMemorize(
-  key: string,
-  essence: string,
-  options: { tags?: string; details?: string; importance?: string },
-  deps: CliDeps,
-): Promise<void> {
-  const importance = options.importance === undefined
-    ? undefined
-    : Number(options.importance);
+async function runMemoryMemorize(key, essence, options, deps) {
+  const importance = options.importance === void 0 ? void 0 : Number(options.importance);
   const entry = await deps.memoryMemorize(key, essence, {
     tags: options.tags ? splitCommaList(options.tags) : [],
     details: options.details,
-    importance: Number.isFinite(importance) ? importance : undefined,
+    importance: Number.isFinite(importance) ? importance : void 0
   });
   writeLine(deps.stdout, formatMemoryEntries([entry]));
 }
-
-export async function runMemoryGet(key: string, deps: CliDeps): Promise<void> {
+async function runMemoryGet(key, deps) {
   const entry = await deps.memoryGet(key);
   if (!entry) {
     writeLine(deps.stdout, `Memory not found: ${key}`);
@@ -329,20 +256,13 @@ export async function runMemoryGet(key: string, deps: CliDeps): Promise<void> {
   }
   writeLine(deps.stdout, formatMemoryEntries([entry]));
 }
-
-export async function runMemoryUpdate(
-  key: string,
-  options: { essence?: string; tags?: string; details?: string; importance?: string },
-  deps: CliDeps,
-): Promise<void> {
-  const importance = options.importance === undefined
-    ? undefined
-    : Number(options.importance);
+async function runMemoryUpdate(key, options, deps) {
+  const importance = options.importance === void 0 ? void 0 : Number(options.importance);
   const entry = await deps.memoryUpdate(key, {
     essence: options.essence,
-    tags: options.tags ? splitCommaList(options.tags) : undefined,
+    tags: options.tags ? splitCommaList(options.tags) : void 0,
     details: options.details,
-    importance: Number.isFinite(importance) ? importance : undefined,
+    importance: Number.isFinite(importance) ? importance : void 0
   });
   if (!entry) {
     writeLine(deps.stdout, `Memory not found: ${key}`);
@@ -350,53 +270,35 @@ export async function runMemoryUpdate(
   }
   writeLine(deps.stdout, formatMemoryEntries([entry]));
 }
-
-export async function runMemoryForget(key: string, deps: CliDeps): Promise<void> {
+async function runMemoryForget(key, deps) {
   const removed = await deps.memoryForget(key);
   writeLine(deps.stdout, removed ? `Forgot memory: ${key}` : `Memory not found: ${key}`);
 }
-
-export async function runMemoryRecall(
-  query: string,
-  limit: number,
-  options: { semantic?: boolean },
-  deps: CliDeps,
-): Promise<void> {
-  writeLine(deps.stdout, formatMemoryEntries(await deps.memoryRecall(query, limit, options)));
+async function runMemoryRecall(query, limit, deps) {
+  writeLine(deps.stdout, formatMemoryEntries(await deps.memoryRecall(query, limit)));
 }
-
-export async function runMemoryConsolidate(deps: CliDeps): Promise<void> {
+async function runMemoryConsolidate(deps) {
   writeLine(deps.stdout, JSON.stringify(await deps.memoryConsolidate(), null, 2));
 }
-
-export async function runMemoryReflect(deps: CliDeps): Promise<void> {
+async function runMemoryReflect(deps) {
   writeLine(deps.stdout, await deps.memoryReflect());
 }
-
-export async function runMemoryClear(deps: CliDeps): Promise<void> {
-  if (!(await deps.confirm("Clear all va-claw memory entries?"))) {
+async function runMemoryClear(deps) {
+  if (!await deps.confirm("Clear all va-claw memory entries?")) {
     writeLine(deps.stdout, "Memory clear aborted.");
     return;
   }
   await deps.memoryClear();
   writeLine(deps.stdout, "Memory cleared.");
 }
-
-export async function runSessionAppend(
-  options: { role?: string; summary?: string },
-  deps: CliDeps,
-): Promise<void> {
+async function runSessionAppend(options, deps) {
   const role = normalizeSessionRole(options.role);
   const summary = options.summary?.trim() ?? "";
   const entry = await deps.appendSessionEntry({ role, summary });
   writeLine(deps.stdout, deps.formatSessionEntry(entry));
 }
-
-export async function runSessionRecall(
-  options: { limit?: string },
-  deps: CliDeps,
-): Promise<void> {
-  const parsedLimit = options.limit === undefined ? 10 : Number(options.limit);
+async function runSessionRecall(options, deps) {
+  const parsedLimit = options.limit === void 0 ? 10 : Number(options.limit);
   const limit = Number.isFinite(parsedLimit) && parsedLimit > 0 ? Math.floor(parsedLimit) : 10;
   const entries = await deps.readRecentSessionEntries(limit);
   if (entries.length === 0) {
@@ -407,8 +309,7 @@ export async function runSessionRecall(
     writeLine(deps.stdout, deps.formatSessionEntry(entry));
   }
 }
-
-export async function runDiscordSetup(deps: CliDeps): Promise<void> {
+async function runDiscordSetup(deps) {
   const config = await deps.loadIdentity();
   const token = await deps.prompt("Discord Bot Token", config.channels.discord.token);
   const clientId = await deps.prompt("Discord Client ID", config.channels.discord.clientId);
@@ -419,20 +320,19 @@ export async function runDiscordSetup(deps: CliDeps): Promise<void> {
       discord: {
         ...config.channels.discord,
         token,
-        clientId,
-      },
-    },
+        clientId
+      }
+    }
   });
   writeLine(deps.stdout, `Saved Discord config to ${deps.configPath}`);
 }
-
-export async function runDiscordStart(deps: CliDeps): Promise<void> {
+async function runDiscordStart(deps) {
   const config = await deps.loadIdentity();
   const discord = await loadDiscordChannelModule();
   const channel = await discord.startDiscordChannel({
     token: config.channels.discord.token,
     clientId: config.channels.discord.clientId,
-    cliCommand: config.channels.discord.cliCommand,
+    cliCommand: config.channels.discord.cliCommand
   });
   writeLine(deps.stdout, "Discord channel started in foreground. Press Ctrl+C to stop.");
   await waitForStopSignal(async () => {
@@ -440,23 +340,18 @@ export async function runDiscordStart(deps: CliDeps): Promise<void> {
     writeLine(deps.stdout, "Discord channel stopped.");
   });
 }
-
-export async function runDiscordStatus(deps: CliDeps): Promise<void> {
+async function runDiscordStatus(deps) {
   const config = await deps.loadIdentity();
-  const configured =
-    config.channels.discord.token.trim() !== "" &&
-    config.channels.discord.clientId.trim() !== "";
+  const configured = config.channels.discord.token.trim() !== "" && config.channels.discord.clientId.trim() !== "";
   const runtime = await deps.getDaemonStatus();
   writeLine(deps.stdout, `Discord: ${configured ? runtime.discord : "disconnected"}`);
   writeLine(deps.stdout, `Configured: ${configured ? "yes" : "no"}`);
   writeLine(deps.stdout, `Auto-start: ${config.channels.discord.autoStart ? "enabled" : "disabled"}`);
 }
-
-export async function runSkillList(deps: CliDeps): Promise<void> {
+async function runSkillList(deps) {
   writeLine(deps.stdout, formatSkills(await deps.skillList()));
 }
-
-export async function runSkillAdd(pathOrUrl: string, deps: CliDeps): Promise<void> {
+async function runSkillAdd(pathOrUrl, deps) {
   if (/^https?:\/\//i.test(pathOrUrl)) {
     throw new Error("Network installs are not supported. Use a local skill file path.");
   }
@@ -465,69 +360,77 @@ export async function runSkillAdd(pathOrUrl: string, deps: CliDeps): Promise<voi
   const installedPath = await deps.skillInstall(content, source.name);
   writeLine(deps.stdout, `Installed skill ${source.name} -> ${installedPath}`);
 }
-
-export async function runSkillRemove(name: string, deps: CliDeps): Promise<void> {
+async function runSkillRemove(name, deps) {
   await deps.skillRemove(name);
   writeLine(deps.stdout, `Removed skill ${name}.`);
 }
-
-export async function runSkillShow(name: string, deps: CliDeps): Promise<void> {
+async function runSkillShow(name, deps) {
   const skill = await deps.skillLoad(name);
   writeLine(deps.stdout, await deps.readTextFile(skill.path));
 }
-
-export async function runUninstall(deps: CliDeps): Promise<void> {
+async function runUninstall(deps) {
   const serviceType = detectServiceType(deps.platform);
   await deps.uninstallDaemonService(serviceType);
   await deps.removeManagedBlock(deps.claudePath, CLAUDE_MARKERS);
   await deps.removeManagedBlock(deps.codexPath, CODEX_MARKERS);
   writeLine(deps.stdout, "va-claw uninstalled.");
 }
-
-function normalizeInstallTarget(target: InstallTarget): InstallTarget {
+function normalizeInstallTarget(target) {
   if (target === "claude-code" || target === "codex" || target === "all") {
     return target;
   }
   throw new Error(`Invalid --for target: ${target}`);
 }
-
-function safeDetectServiceType(platform: NodeJS.Platform) {
+function safeDetectServiceType(platform) {
   try {
     return detectServiceType(platform);
   } catch {
     return null;
   }
 }
-
-async function loadDiscordChannelModule(): Promise<{
-  startDiscordChannel(config: {
-    token: string;
-    clientId: string;
-    cliCommand?: string;
-  }): Promise<{ stop(): Promise<void> }>;
-  stopDiscordChannel(channel: { stop(): Promise<void> }): Promise<void>;
-}> {
+async function loadDiscordChannelModule() {
   const moduleUrl = new URL("../../channels/discord/dist/index.js", import.meta.url);
-  return import(moduleUrl.href) as Promise<{
-    startDiscordChannel(config: {
-      token: string;
-      clientId: string;
-      cliCommand?: string;
-    }): Promise<{ stop(): Promise<void> }>;
-    stopDiscordChannel(channel: { stop(): Promise<void> }): Promise<void>;
-  }>;
+  return import(moduleUrl.href);
 }
-
-function splitCommaList(value: string): string[] {
-  return value
-    .split(",")
-    .map((part) => part.trim())
-    .filter((part) => part.length > 0);
+function splitCommaList(value) {
+  return value.split(",").map((part) => part.trim()).filter((part) => part.length > 0);
 }
-
-function normalizeSessionRole(role: string | undefined): SessionRole {
+function normalizeSessionRole(role) {
   if (role === "user" || role === "assistant") {
     return role;
   }
   throw new Error("Session role must be 'user' or 'assistant'.");
 }
+export {
+  runClawAdd,
+  runClawHeartbeat,
+  runClawList,
+  runClawRemove,
+  runClawStatus,
+  runClawUpdate,
+  runDiscordSetup,
+  runDiscordStart,
+  runDiscordStatus,
+  runInstall,
+  runMemoryClear,
+  runMemoryConsolidate,
+  runMemoryForget,
+  runMemoryGet,
+  runMemoryList,
+  runMemoryMemorize,
+  runMemoryRecall,
+  runMemoryReflect,
+  runMemorySearch,
+  runMemoryUpdate,
+  runProtocol,
+  runSessionAppend,
+  runSessionRecall,
+  runSkillAdd,
+  runSkillList,
+  runSkillRemove,
+  runSkillShow,
+  runStart,
+  runStatus,
+  runStop,
+  runUninstall
+};

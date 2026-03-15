@@ -85,7 +85,7 @@ export type CliDeps = {
     },
   ) => Promise<MemoryEntry | undefined>;
   memoryForget: (key: string) => Promise<boolean>;
-  memoryRecall: (query: string, limit: number) => Promise<MemoryEntry[]>;
+  memoryRecall: (query: string, limit: number, options?: { semantic?: boolean }) => Promise<MemoryEntry[]>;
   memoryConsolidate: () => Promise<{
     forgotten: number;
     strengthened: number;
